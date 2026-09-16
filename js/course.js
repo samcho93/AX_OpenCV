@@ -1,6 +1,6 @@
 /* =========================================================================
- * 강좌 구성 (5주 × 8교시 = 40교시)
- *  - 1~3주: 교육 (OpenCV 입문 → GUI → 코어 연산 → Image Processing)
+ * 강좌 구성 (5주 · 41교시: 1주차 9교시 + 2~5주차 각 8교시)
+ *  - 1~3주: 교육 (영상처리 기초 이론 → OpenCV 입문 → GUI → 코어 연산 → Image Processing)
  *  - 4~5주: 프로젝트 (가이드 프로젝트 → 팀 프로젝트 → 발표)
  * 각 교시의 상세 내용은 lessons/weekN.js 에서 COURSE.addLessons()로 등록합니다.
  * ========================================================================= */
@@ -9,8 +9,8 @@
 
   const weeks = [
     {
-      no: 1, kind: '교육', title: 'OpenCV 입문 · GUI · 코어 연산',
-      desc: '웹 실습 환경에 익숙해지고, 이미지/비디오 입출력과 그리기, 마우스·트랙바, 픽셀 단위 기본 연산을 익힙니다.',
+      no: 1, kind: '교육', title: '영상처리 기초 · OpenCV 입문 · GUI · 코어 연산',
+      desc: '영상처리의 기초 이론(픽셀·흑백·컬러)과 활용 분야를 이해하고, 웹 실습 환경에서 이미지/비디오 입출력과 그리기, 마우스·트랙바, 픽셀 단위 기본 연산을 익힙니다.',
     },
     {
       no: 2, kind: '교육', title: 'Image Processing Ⅰ',
@@ -30,17 +30,18 @@
     },
   ];
 
-  /* 교시별 제목과 OpenCV.org 참고 튜토리얼 */
+  /* 교시별 제목과 OpenCV.org 참고 튜토리얼 (경로가 http 로 시작하면 그대로 사용) */
   const syllabus = [
     // ---------------- 1주차 ----------------
     ['w1-1', '과정 소개와 웹 실습 환경', 'Python·NumPy 기초, 이미지는 배열이다', [['Introduction to OpenCV-Python Tutorials', 'd0/de3/tutorial_py_intro.html'], ['Install OpenCV for Python with pip', 'db/dd1/tutorial_py_pip_install.html']]],
-    ['w1-2', '이미지 읽기 · 표시 · 저장', 'imread, imshow, imwrite, Matplotlib', [['Getting Started with Images', 'db/deb/tutorial_display_image.html']]],
-    ['w1-3', '비디오와 웹캠 다루기', 'VideoCapture, 프레임 처리, process(frame)', [['Getting Started with Videos', 'dd/d43/tutorial_py_video_display.html']]],
-    ['w1-4', '그리기 함수', 'line, rectangle, circle, ellipse, polylines, putText', [['Drawing Functions in OpenCV', 'dc/da5/tutorial_py_drawing_functions.html']]],
-    ['w1-5', '마우스로 그리기 (페인트 브러시)', 'setMouseCallback, 마우스 이벤트', [['Mouse as a Paint-Brush', 'db/d5b/tutorial_py_mouse_handling.html']]],
-    ['w1-6', '트랙바로 만드는 컬러 팔레트', 'createTrackbar, getTrackbarPos', [['Trackbar as the Color Palette', 'd9/dc8/tutorial_py_trackbar.html']]],
-    ['w1-7', '이미지 기본 연산', '픽셀 접근, 속성, ROI, 채널 분리·병합, 테두리', [['Basic Operations on Images', 'd3/df2/tutorial_py_basic_ops.html']]],
-    ['w1-8', '이미지 산술 연산과 성능 측정', 'add, addWeighted, 비트 연산, getTickCount', [['Arithmetic Operations on Images', 'd0/d86/tutorial_py_image_arithmetics.html'], ['Performance Measurement and Improvement Techniques', 'dc/d71/tutorial_py_optimization.html']]],
+    ['w1-2', '영상처리 기초 이론', '디지털 영상 · 픽셀 · 흑백과 컬러 · 영상처리와 OpenCV의 활용', [['OpenCV: About', 'https://opencv.org/about/'], ['Color conversions (RGB ↔ GRAY 공식)', 'de/d25/imgproc_color_conversions.html'], ['Introduction (OpenCV 모듈 구성)', 'd1/dfb/intro.html']]],
+    ['w1-3', '이미지 읽기 · 표시 · 저장', 'imread, imshow, imwrite, Matplotlib', [['Getting Started with Images', 'db/deb/tutorial_display_image.html']]],
+    ['w1-4', '비디오와 웹캠 다루기', 'VideoCapture, 프레임 처리, process(frame)', [['Getting Started with Videos', 'dd/d43/tutorial_py_video_display.html']]],
+    ['w1-5', '그리기 함수', 'line, rectangle, circle, ellipse, polylines, putText', [['Drawing Functions in OpenCV', 'dc/da5/tutorial_py_drawing_functions.html']]],
+    ['w1-6', '마우스로 그리기 (페인트 브러시)', 'setMouseCallback, 마우스 이벤트', [['Mouse as a Paint-Brush', 'db/d5b/tutorial_py_mouse_handling.html']]],
+    ['w1-7', '트랙바로 만드는 컬러 팔레트', 'createTrackbar, getTrackbarPos', [['Trackbar as the Color Palette', 'd9/dc8/tutorial_py_trackbar.html']]],
+    ['w1-8', '이미지 기본 연산', '픽셀 접근, 속성, ROI, 채널 분리·병합, 테두리', [['Basic Operations on Images', 'd3/df2/tutorial_py_basic_ops.html']]],
+    ['w1-9', '이미지 산술 연산과 성능 측정', 'add, addWeighted, 비트 연산, getTickCount', [['Arithmetic Operations on Images', 'd0/d86/tutorial_py_image_arithmetics.html'], ['Performance Measurement and Improvement Techniques', 'dc/d71/tutorial_py_optimization.html']]],
     // ---------------- 2주차 ----------------
     ['w2-1', '색 공간 변환', 'cvtColor, BGR · GRAY · HSV', [['Changing Colorspaces', 'df/d9d/tutorial_py_colorspaces.html']]],
     ['w2-2', '색상 기반 객체 추적', 'inRange, HSV 범위, 웹캠 추적', [['Changing Colorspaces', 'df/d9d/tutorial_py_colorspaces.html']]],
@@ -83,7 +84,7 @@
     const [w, p] = id.slice(1).split('-').map(Number);
     return {
       id, week: w, period: p, title, topics,
-      ref: refs.map(([label, path]) => ({ label, url: DOC + path })),
+      ref: refs.map(([label, path]) => ({ label, url: /^https?:/.test(path) ? path : DOC + path })),
       goals: [], blocks: [], practice: [], quiz: [],
       placeholder: true,
     };

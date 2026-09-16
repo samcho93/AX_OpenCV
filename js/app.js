@@ -370,7 +370,7 @@
         <div class="hero-text">
           <div class="crumbs">OpenCV.org 공식 튜토리얼 기반 · Python</div>
           <h1>OpenCV-Python<br>입문부터 Image Processing까지</h1>
-          <p class="lead">5주 · 주 8교시(총 40교시). <b>3주 교육</b>으로 이미지 입출력부터 필터·엣지·컨투어·히스토그램까지 익히고,
+          <p class="lead">5주 · 총 41교시(1주차 9교시, 2~5주차 각 8교시). <b>3주 교육</b>으로 영상처리 기초 이론과 이미지 입출력부터 필터·엣지·컨투어·히스토그램까지 익히고,
           <b>2주 프로젝트</b>로 문서 스캐너·동전 분석기·가상 페인터 같은 결과물을 직접 만듭니다.
           설치 없이 브라우저에서 바로 Python 코드를 실행하고, 이미지와 웹캠으로 결과를 확인하세요.</p>
           <div class="hero-actions">
@@ -379,13 +379,13 @@
           </div>
         </div>
         <div class="hero-stats">
-          <div><b>40</b><span>교시</span></div><div><b>24</b><span>교육</span></div><div><b>16</b><span>프로젝트</span></div>
+          <div><b>${C.lessons.length}</b><span>교시</span></div><div><b>${C.lessons.filter((l) => l.week <= 3).length}</b><span>교육</span></div><div><b>${C.lessons.filter((l) => l.week >= 4).length}</b><span>프로젝트</span></div>
         </div>
       </header>
       <div class="block table-wrap"><table class="plan">
         <thead><tr><th>구분</th><th>주차</th><th>주제</th><th>핵심 결과물</th></tr></thead>
         <tbody>
-          <tr><td rowspan="3"><span class="badge edu">교육</span></td><td>1주</td><td>입문 · GUI · 코어 연산</td><td>그림판, 컬러 팔레트, 로고 합성</td></tr>
+          <tr><td rowspan="3"><span class="badge edu">교육</span></td><td>1주</td><td>영상처리 기초 이론 · 입문 · GUI · 코어 연산</td><td>픽셀·색 이해, 그림판, 컬러 팔레트, 로고 합성</td></tr>
           <tr><td>2주</td><td>Image Processing Ⅰ</td><td>색상 추적기, 원근 보정, 이진화·필터 비교</td></tr>
           <tr><td>3주</td><td>Image Processing Ⅱ</td><td>엣지·컨투어 분석, 히스토그램, 템플릿·허프 검출</td></tr>
           <tr><td rowspan="2"><span class="badge proj">프로젝트</span></td><td>4주</td><td>가이드 프로젝트 · 기획</td><td>문서 스캐너, 동전·도형 분석기, 가상 페인터, 필터 앱</td></tr>

@@ -31,7 +31,7 @@ Matplotlib·SciPy 같은 다른 Python 라이브러리와도 쉽게 함께 쓸 �
           ['응용', '문서 스캐너, 동전 세기, 웹캠 페인터, 사진 필터 앱', '4~5주차 프로젝트'],
         ] },
       { type: 'text', html: `<h3>2. 5주 과정 로드맵</h3>
-<p>이 과정은 <b>5주 × 8교시(교시당 50분)</b>로 구성되어 있습니다. 앞의 3주는 OpenCV.org 공식 튜토리얼을 따라 기능을 하나씩 배우고,
+<p>이 과정은 <b>5주 · 41교시(교시당 50분)</b>로 구성되어 있습니다. 1주차는 영상처리 기초 이론 1교시가 더해져 9교시, 2~5주차는 각 8교시입니다. 앞의 3주는 OpenCV.org 공식 튜토리얼을 따라 기능을 하나씩 배우고,
 뒤의 2주는 배운 기능을 조합해 실제로 동작하는 프로그램을 만듭니다.</p>
 <ul>
 <li><b>1주차 · OpenCV 입문 · GUI · 코어 연산</b> — 실습 환경, 이미지/비디오 입출력, 그리기, 마우스·트랙바, 픽셀 연산</li>
@@ -333,10 +333,495 @@ print('높이, 너비, 채널 =', img.shape)
   },
 
   /* =====================================================================
-   * w1-2 이미지 읽기 · 표시 · 저장
+   * w1-2 영상처리 기초 이론
    * ===================================================================== */
   {
     id: 'w1-2',
+    summary: '코드를 본격적으로 쓰기 전에, 컴퓨터가 사진을 어떻게 “숫자”로 저장하는지, 흑백과 컬러는 무엇이 다른지, 그리고 영상처리와 OpenCV가 우리 생활 어디에서 쓰이고 있는지를 쉬운 비유와 짧은 예제로 알아봅니다.',
+    goals: [
+      '디지털 영상이 픽셀(화소)의 격자이고, 각 픽셀은 밝기나 색을 나타내는 숫자라는 것을 설명할 수 있다',
+      '해상도(샘플링)와 밝기 단계(양자화)가 화질에 어떤 영향을 주는지 직접 확인할 수 있다',
+      '흑백(1채널)과 컬러(3채널, BGR) 영상의 구조 차이와 흑백 변환 원리를 설명할 수 있다',
+      '영상처리 · 컴퓨터 비전의 차이를 이해하고, OpenCV가 쓰이는 실제 분야를 예로 들 수 있다',
+    ],
+    schedule: [['도입: 컴퓨터의 눈', 5], ['디지털 영상과 픽셀', 12], ['흑백과 컬러', 13], ['영상처리 · OpenCV 활용 사례', 12], ['정리·퀴즈', 8]],
+    blocks: [
+      { type: 'text', html: `<h3>1. 사람의 눈 vs 컴퓨터의 눈</h3>
+<p>축구 사진을 보면 사람은 한눈에 “선수가 공을 차고 있다”고 알아봅니다. 하지만 컴퓨터가 받는 것은 <b>수십만 개의 숫자가 적힌 표</b>뿐입니다.
+컴퓨터가 “공이 어디 있지?”라고 답하려면, 이 숫자 표에서 규칙(밝기 변화, 색, 모양)을 찾아내는 과정이 필요합니다. 그 과정이 바로 <b>영상처리</b>입니다.</p>
+<p><b>비유:</b> 모눈종이의 칸마다 색연필 번호를 적어 둔 그림을 떠올려 보세요. 멀리서 보면 그림이지만, 가까이 보면 번호가 적힌 칸의 모음입니다.
+디지털 사진도 똑같습니다. 이 칸 하나를 <b>픽셀(pixel, 화소)</b>이라고 부릅니다. (pixel = <i>picture element</i>, 그림의 요소)</p>
+<p>카메라는 렌즈로 모은 빛을 <b>이미지 센서</b>의 아주 작은 감광 소자 수백만 개가 받아, 각 위치에 들어온 빛의 세기를 숫자로 바꿔 저장합니다.
+대부분의 센서는 소자 위에 빨강·초록·파랑 필터를 번갈아 붙인 <b>베이어(Bayer) 필터</b>를 사용해 색 정보도 함께 얻습니다.</p>` },
+      { type: 'text', html: `<h3>2. 디지털 영상 = 숫자의 격자</h3>
+<p>아래는 8×8 픽셀짜리 아주 작은 흑백 이미지입니다. 칸의 숫자가 곧 밝기이고(0 = 검정, 255 = 흰색), 배경색은 그 숫자를 실제 밝기로 칠한 것입니다. 숫자만으로 웃는 얼굴이 보이나요?</p>
+<table class="pixgrid"><tbody><tr><td style="background:rgb(255,255,255);color:#000">255</td><td style="background:rgb(255,255,255);color:#000">255</td><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(255,255,255);color:#000">255</td><td style="background:rgb(255,255,255);color:#000">255</td></tr><tr><td style="background:rgb(255,255,255);color:#000">255</td><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(255,255,255);color:#000">255</td></tr><tr><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(230,230,230);color:#000">230</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(230,230,230);color:#000">230</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(200,200,200);color:#000">200</td></tr><tr><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(200,200,200);color:#000">200</td></tr><tr><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(230,230,230);color:#000">230</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(230,230,230);color:#000">230</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(200,200,200);color:#000">200</td></tr><tr><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(230,230,230);color:#000">230</td><td style="background:rgb(230,230,230);color:#000">230</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(200,200,200);color:#000">200</td></tr><tr><td style="background:rgb(255,255,255);color:#000">255</td><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(60,60,60);color:#fff">60</td><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(255,255,255);color:#000">255</td></tr><tr><td style="background:rgb(255,255,255);color:#000">255</td><td style="background:rgb(255,255,255);color:#000">255</td><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(200,200,200);color:#000">200</td><td style="background:rgb(255,255,255);color:#000">255</td><td style="background:rgb(255,255,255);color:#000">255</td></tr></tbody></table>
+<p>이 표를 컴퓨터는 <b>2차원 배열</b>로 저장합니다. OpenCV-Python에서는 NumPy 배열이고, <code>img[행, 열]</code> 즉 <code>img[y, x]</code>로 한 칸을 꺼냅니다.</p>
+<ul>
+<li><b>좌표의 원점 (0, 0)은 왼쪽 위</b>입니다. x는 오른쪽으로, <b>y는 아래쪽으로</b> 커집니다(수학 그래프와 반대).</li>
+<li>OpenCV 함수(그리기 등)는 좌표를 <b>(x, y)</b> 순서로 받고, NumPy 인덱싱은 <b>[y, x]</b> 순서입니다. 초보자가 가장 많이 헷갈리는 부분이에요.</li>
+<li><b>해상도</b>는 “가로 × 세로 픽셀 수”입니다. messi5.jpg는 548×342 = 187,416개, Full HD는 1920×1080 ≈ 207만 개, “1200만 화소” 스마트폰 사진은 약 4000×3000개의 픽셀입니다.</li>
+</ul>` },
+      { type: 'table', head: ['용어', '뜻', '예시'],
+        rows: [
+          ['<b>픽셀</b> (화소)', '영상을 이루는 가장 작은 점 하나', 'messi5.jpg 는 187,416개의 픽셀'],
+          ['<b>해상도</b>', '가로 × 세로 픽셀 수. 클수록 세밀함', '640×480, 1920×1080(Full HD)'],
+          ['<b>채널</b>', '픽셀 하나가 가진 값의 개수', '흑백 1채널, 컬러 3채널(B, G, R), 투명도 포함 4채널'],
+          ['<b>비트 깊이</b>', '한 채널 값을 저장하는 비트 수 → 표현 단계 수', '8비트 = 2⁸ = 256단계 (0~255), <code>uint8</code>'],
+          ['<b>프레임 · fps</b>', '동영상을 이루는 한 장의 이미지 · 초당 장 수', '30fps 동영상 1분 = 1,800장'],
+        ] },
+      { type: 'code', title: '예제 1 · 사진을 확대해 픽셀과 숫자 보기', code: String.raw`
+import cv2 as cv
+import numpy as np
+
+img = cv.imread('messi5.jpg')
+print('shape (세로, 가로, 채널):', img.shape)
+print('전체 픽셀 수:', img.shape[0] * img.shape[1])
+
+# 축구공 부분의 작은 영역(16×16 픽셀)을 잘라 봅니다
+x, y = 346, 296
+patch = img[y:y+16, x:x+16]
+
+# 한 픽셀이 20×20 칸이 되도록 확대 (INTER_NEAREST: 뭉개지 않고 그대로 키움)
+big = cv.resize(patch, None, fx=20, fy=20, interpolation=cv.INTER_NEAREST)
+for i in range(0, big.shape[0], 20):          # 픽셀 경계에 격자선 그리기
+    cv.line(big, (0, i), (big.shape[1], i), (60, 60, 60), 1)
+    cv.line(big, (i, 0), (i, big.shape[0]), (60, 60, 60), 1)
+
+view = img.copy()
+cv.rectangle(view, (x, y), (x + 16, y + 16), (0, 0, 255), 2)
+cv.imshow('원본 (빨간 상자 = 확대한 곳)', view)
+cv.imshow('16x16 확대: 한 칸 = 픽셀 1개', big)
+
+# 같은 영역을 흑백으로 바꿔 숫자로 출력
+gray = cv.cvtColor(patch, cv.COLOR_BGR2GRAY)
+print('확대한 영역의 왼쪽 위 8×8 밝기 값 (0=검정, 255=흰색):')
+print(gray[:8, :8])
+`, desc: '<p>확대 창에서 매끄러워 보이던 공이 <b>네모난 칸의 모음</b>이라는 것이 보입니다. 결과 창 위에 마우스를 올리면 오른쪽 위에 <b>좌표와 픽셀 값</b>이 표시되니, 어두운 칸과 밝은 칸의 숫자를 직접 비교해 보세요.</p>' },
+      { type: 'text', html: `<h3>3. 아날로그 → 디지털: 샘플링과 양자화</h3>
+<p>현실의 장면은 끊김 없이 이어진 <b>아날로그</b> 신호입니다. 이것을 컴퓨터에 저장하려면 두 번 “잘게 자르는” 과정을 거칩니다.</p>
+<ul>
+<li><b>샘플링(Sampling)</b> — 공간을 몇 칸으로 나눌지 정하는 것 = <b>해상도</b>. 칸이 적으면 모자이크처럼 계단 현상이 생깁니다.</li>
+<li><b>양자화(Quantization)</b> — 한 칸의 밝기를 몇 단계로 표현할지 정하는 것 = <b>비트 깊이</b>. 단계가 적으면 부드러운 그라데이션이 “띠”처럼 끊겨 보입니다.</li>
+</ul>
+<p>비유하면 샘플링은 <b>모눈종이 칸의 크기</b>, 양자화는 <b>색연필의 개수</b>입니다. 사람 눈은 보통 256단계(8비트)면 흑백의 변화를 충분히 부드럽게 느끼기 때문에, 대부분의 영상이 채널당 8비트(0~255)를 씁니다.</p>` },
+      { type: 'code', title: '예제 2 · 샘플링: 해상도를 줄이면?', code: String.raw`
+import cv2 as cv
+import numpy as np
+
+img = cv.imread('lena.jpg')                   # 512×512
+
+views = []
+for size in [256, 64, 32, 16]:
+    small = cv.resize(img, (size, size), interpolation=cv.INTER_AREA)    # 해상도 낮추기
+    back = cv.resize(small, (256, 256), interpolation=cv.INTER_NEAREST)  # 보기 좋게 같은 크기로 확대
+    cv.putText(back, f'{size}x{size}', (8, 28), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+    views.append(back)
+    print(f'{size}×{size} 해상도 → 픽셀 {size * size:,}개')
+
+cv.imshow('샘플링: 해상도가 낮을수록 모자이크', np.hstack(views))
+`, desc: '<p>16×16에서는 누구인지 알아보기 어렵지만, 64×64 정도만 되어도 사람 얼굴로 보입니다. 그래서 실시간 처리에서는 <b>필요한 만큼만 해상도를 낮춰 속도를 얻는</b> 기법을 자주 씁니다(5주차에서 다시 다룹니다).</p>' },
+      { type: 'code', title: '예제 3 · 양자화: 밝기 단계를 줄이면?', code: String.raw`
+import cv2 as cv
+import numpy as np
+
+gray = cv.imread('lena.jpg', cv.IMREAD_GRAYSCALE)   # 흑백으로 읽기
+gray = cv.resize(gray, (256, 256))
+
+views = []
+for levels in [256, 16, 4, 2]:
+    step = 256 // levels                             # 한 단계의 폭
+    q = (gray // step) * step + step // 2            # 같은 구간의 값을 하나로 묶기
+    q = q.astype(np.uint8)
+    print(f'{levels:3d}단계 → 실제로 쓰인 서로 다른 밝기 값: {len(np.unique(q))}개')
+    shown = cv.cvtColor(q, cv.COLOR_GRAY2BGR)
+    cv.putText(shown, f'{levels} levels', (8, 28), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+    views.append(shown)
+
+cv.imshow('양자화: 단계가 적을수록 띠가 생김', np.hstack(views))
+`, desc: '<p>16단계만 되어도 꽤 자연스럽지만, 볼·배경처럼 밝기가 서서히 변하는 곳에 <b>등고선 같은 띠</b>가 생깁니다. 2단계는 검정/흰색만 남은 <b>이진 영상</b>으로, 2주차 임계처리에서 다시 만납니다.</p>' },
+      { type: 'text', html: `<h3>4. 흑백(그레이스케일) 영상</h3>
+<p>흑백 영상은 픽셀마다 <b>밝기 값 하나</b>만 가집니다. 그래서 NumPy 배열의 모양이 <code>(세로, 가로)</code>인 <b>2차원 배열</b>이고, 값은 0(검정) ~ 255(흰색)입니다.</p>
+<ul>
+<li><b>왜 흑백을 많이 쓸까?</b> 데이터가 컬러의 1/3이라 계산이 빠르고, 윤곽선 · 모양 · 글자처럼 <b>밝기 변화만으로 충분한 작업</b>이 많기 때문입니다. 엣지 검출, 임계처리, 컨투어, 템플릿 매칭 등 이 과정의 많은 함수가 흑백 영상을 입력으로 받습니다.</li>
+<li><b>이진(binary) 영상</b>은 흑백 중에서도 값이 0과 255 두 개뿐인 영상입니다. “물체(흰색)와 배경(검정)”을 나누는 <b>마스크</b>로 쓰입니다.</li>
+<li>흑백으로 바꾸면 색 정보는 <b>사라져서 되돌릴 수 없습니다</b>. 흑백을 다시 3채널로 바꿀 수는 있지만(<code>COLOR_GRAY2BGR</code>) 세 채널이 같은 값이라 여전히 회색입니다.</li>
+</ul>` },
+      { type: 'text', html: `<h3>5. 컬러 영상과 빛의 3원색</h3>
+<p>모니터와 카메라는 <b>빛의 3원색(빨강 R · 초록 G · 파랑 B)</b>을 섞어 색을 만듭니다. 빛은 섞을수록 밝아지는 <b>가산 혼합</b>이라서
+빨강+초록 = <b>노랑</b>, 초록+파랑 = <b>청록</b>, 빨강+파랑 = <b>자홍</b>, 셋 다 최대 = <b>흰색</b>이 됩니다. (물감은 섞을수록 어두워지는 감산 혼합이라 다릅니다.)</p>
+<ul>
+<li>컬러 픽셀 하나 = 숫자 <b>3개</b>. 배열 모양은 <code>(세로, 가로, 3)</code>입니다.</li>
+<li>채널당 256단계 × 3채널 = 256³ = <b>16,777,216가지 색</b>(24비트 “트루컬러”)을 표현합니다.</li>
+<li><b>⚠️ OpenCV는 RGB가 아니라 BGR 순서</b>로 저장합니다. 초창기 카메라 드라이버와 Windows 비트맵 형식이 BGR 순서를 썼던 역사 때문입니다. 그래서 <code>(255, 0, 0)</code>은 OpenCV에서 <b>파랑</b>입니다. Matplotlib·웹 이미지는 RGB라서 순서를 바꿔야 합니다(다음 교시에서 실습).</li>
+<li>PNG처럼 투명도가 있는 이미지는 <b>알파(A) 채널</b>이 더해진 4채널(BGRA)입니다.</li>
+<li>색을 “색상 · 채도 · 밝기”로 표현하는 <b>HSV</b> 같은 다른 색 공간도 있습니다. 그늘이 져도 색상 값이 잘 안 변해 색으로 물체를 찾을 때 편리합니다(2주차).</li>
+</ul>` },
+      { type: 'table', head: ['비교', '흑백 (Grayscale)', '컬러 (BGR)'],
+        rows: [
+          ['채널 수', '1', '3 (투명도 포함 시 4)'],
+          ['NumPy shape', '<code>(h, w)</code>', '<code>(h, w, 3)</code>'],
+          ['픽셀 하나', '<code>128</code>', '<code>[255, 0, 0]</code> → 파랑'],
+          ['표현 가능한 값', '256단계 밝기', '16,777,216가지 색'],
+          ['640×480 한 장의 크기', '307,200 바이트 (약 0.3MB)', '921,600 바이트 (약 0.9MB)'],
+          ['주로 쓰는 곳', '엣지 · 임계처리 · 컨투어 · 문서 · 측정', '색상 추적 · 분류 · 사진 보정 · 결과 표시'],
+        ] },
+      { type: 'code', title: '예제 4 · 빛의 3원색 섞어 보기 (가산 혼합)', code: String.raw`
+import cv2 as cv
+import numpy as np
+
+h, w = 300, 300
+blue = np.zeros((h, w, 3), np.uint8)
+green = np.zeros((h, w, 3), np.uint8)
+red = np.zeros((h, w, 3), np.uint8)
+
+# 색은 (B, G, R) 순서!
+cv.circle(blue, (150, 110), 80, (255, 0, 0), -1)
+cv.circle(green, (105, 190), 80, (0, 255, 0), -1)
+cv.circle(red, (195, 190), 80, (0, 0, 255), -1)
+
+mix = cv.add(cv.add(blue, green), red)      # 빛을 더한다 (255를 넘으면 255로 고정)
+cv.imshow('빛의 3원색 가산 혼합', mix)
+
+points = {
+    '파랑만': (150, 50), '파랑+초록 = 청록': (100, 130), '파랑+빨강 = 자홍': (200, 130),
+    '초록+빨강 = 노랑': (150, 230), '셋 다 = 흰색': (150, 170),
+}
+for name, (x, y) in points.items():
+    print(f'{name:14s} (x={x}, y={y}) → BGR {mix[y, x]}')
+`, desc: '<p>콘솔에 찍힌 BGR 값을 보면 <b>노랑 = [0, 255, 255]</b>(초록+빨강), <b>흰색 = [255, 255, 255]</b>임을 확인할 수 있습니다. 결과 창에 마우스를 올려 다른 위치의 값도 읽어 보세요.</p>' },
+      { type: 'code', title: '예제 5 · 컬러 사진을 채널별로 나눠 보기', code: String.raw`
+import cv2 as cv
+import numpy as np
+
+img = cv.imread('fruits.jpg')
+b, g, r = cv.split(img)          # 채널 3개를 흑백 이미지 3장으로 분리
+
+# 각 채널은 "그 색이 얼마나 강한지"를 밝기로 보여주는 흑백 영상
+cv.imshow('원본', img)
+cv.imshow('B 채널 (파랑의 세기)', b)
+cv.imshow('G 채널 (초록의 세기)', g)
+cv.imshow('R 채널 (빨강의 세기)', r)
+
+# 오렌지(주황) 한 점과 라임(초록) 한 점의 값 비교
+for name, (x, y) in {'오렌지': (200, 380), '라임': (420, 200)}.items():
+    print(f'{name}: B={img[y, x, 0]}, G={img[y, x, 1]}, R={img[y, x, 2]}')
+`, desc: '<p>주황색 오렌지는 <b>R 채널에서 밝고 B 채널에서 어둡게</b> 보입니다(주황 = 빨강 많이 + 초록 조금). 초록 라임은 G 채널에서 상대적으로 밝습니다. 이렇게 “채널 = 색의 세기 지도”로 생각하면 색 기반 처리가 쉬워집니다.</p>' },
+      { type: 'code', title: '예제 6 · 컬러 → 흑백 변환의 원리', code: String.raw`
+import cv2 as cv
+import numpy as np
+
+img = cv.imread('fruits.jpg')
+b, g, r = cv.split(img.astype(np.float32))
+
+gray_avg = ((b + g + r) / 3).round().astype(np.uint8)                   # 단순 평균
+gray_weight = (0.299 * r + 0.587 * g + 0.114 * b).round().astype(np.uint8)  # 사람 눈 감도 반영
+gray_cv = cv.cvtColor(img, cv.COLOR_BGR2GRAY)                            # OpenCV 함수
+
+diff = np.abs(gray_cv.astype(int) - gray_weight.astype(int)).max()
+print('OpenCV 결과와 가중합 공식의 최대 차이:', diff, '(반올림 오차 수준)')
+
+cv.imshow('단순 평균 (B+G+R)/3', gray_avg)
+cv.imshow('OpenCV COLOR_BGR2GRAY (가중합)', gray_cv)
+
+# 같은 최대 밝기(255)라도 색마다 흑백 값이 다르다
+pure = np.uint8([[[255, 0, 0], [0, 255, 0], [0, 0, 255]]])   # 파랑, 초록, 빨강 (BGR)
+print('순수 파랑 · 초록 · 빨강의 흑백 값:', cv.cvtColor(pure, cv.COLOR_BGR2GRAY)[0])
+`, desc: '<p>OpenCV는 <b>Y = 0.299·R + 0.587·G + 0.114·B</b> 공식을 씁니다(공식 문서 “Color conversions”). 사람 눈은 <b>초록에 가장 민감하고 파랑에 가장 둔감</b>해서 초록의 가중치가 가장 큽니다. 그래서 순수 초록(150)은 순수 파랑(29)보다 훨씬 밝은 회색이 됩니다.</p>' },
+      { type: 'tip', html: `<p><b>동영상도 결국 이미지입니다.</b> 동영상은 이미지(프레임)를 1초에 수십 장씩 이어 보여주는 것입니다. 640×480 컬러 영상을 30fps로 1초만 저장해도 921,600 × 30 ≈ <b>27.6MB</b>라서, 실제 동영상 파일은 코덱으로 압축해 저장합니다.
+실시간 처리를 하려면 한 프레임을 <b>약 33ms(1/30초) 안에</b> 처리해야 한다는 뜻이기도 합니다.</p>` },
+      { type: 'text', html: `<h3>6. 영상처리 · 컴퓨터 비전 · 인공지능</h3>
+<p>세 용어는 자주 섞여 쓰이지만 초점이 조금씩 다릅니다.</p>
+<ul>
+<li><b>영상처리(Image Processing)</b> — <b>영상 → 영상</b>. 밝기 보정, 잡음 제거, 선명하게 하기, 크기·회전 변환처럼 영상을 “가공”합니다.</li>
+<li><b>컴퓨터 비전(Computer Vision)</b> — <b>영상 → 정보</b>. “동전이 몇 개?”, “차선은 어디?”, “이 글자는 무엇?”처럼 영상을 “이해”해 답을 냅니다.</li>
+<li><b>인공지능·딥러닝</b> — 많은 데이터로 학습해 사람·사물을 인식합니다. 하지만 입력 영상을 알맞게 자르고, 크기를 맞추고, 결과를 그려 보여주는 <b>앞뒤 과정은 여전히 전통적인 영상처리</b>의 몫입니다. OpenCV에는 딥러닝 모델을 실행하는 <code>dnn</code> 모듈도 있습니다.</li>
+</ul>
+<p>실제 프로그램은 보통 <b>입력 → 전처리 → 특징 찾기 → 분석 → 결과 표시</b>의 파이프라인으로 만듭니다. 이 과정에서 배우는 기술을 단계별로 정리하면 다음과 같습니다.</p>` },
+      { type: 'table', head: ['단계', '하는 일', '대표 기술', '이 과정'],
+        rows: [
+          ['① 입력', '이미지 · 동영상 · 카메라에서 영상을 얻는다', '<code>imread</code>, <code>VideoCapture</code>', '1주차'],
+          ['② 전처리 (저수준)', '보기 좋게 · 다루기 쉽게 다듬는다', '흑백 변환, 크기 조절, 블러, 히스토그램 평활화', '1~3주차'],
+          ['③ 특징 찾기 (중수준)', '경계 · 영역 · 모양을 뽑아낸다', '임계처리, 엣지(Canny), 모폴로지, 컨투어', '2~3주차'],
+          ['④ 분석 · 인식 (고수준)', '개수 · 위치 · 종류를 판단한다', '컨투어 특징, 템플릿 매칭, 허프 변환, (딥러닝)', '3~5주차'],
+          ['⑤ 결과 표시', '사람이 이해하도록 그려서 보여준다', '도형 · 글자 그리기, 합성, 저장', '1주차~'],
+        ] },
+      { type: 'code', title: '예제 7 · 영상처리 파이프라인 맛보기 (앞으로 배울 것 미리 보기)', code: String.raw`
+import cv2 as cv
+import numpy as np
+
+img = cv.imread('water_coins.jpg')                         # ① 입력
+gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)                  # ② 전처리: 흑백
+blur = cv.GaussianBlur(gray, (5, 5), 0)                     # ② 전처리: 잡음 줄이기 (2주차)
+_, mask = cv.threshold(blur, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)  # ③ 동전/배경 나누기 (2주차)
+edges = cv.Canny(blur, 50, 150)                             # ③ 윤곽선 (3주차)
+
+contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)  # ④ 덩어리 찾기 (3주차)
+result = img.copy()
+cv.drawContours(result, contours, -1, (0, 255, 0), 2)       # ⑤ 결과 표시
+cv.putText(result, f'blobs: {len(contours)}', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+
+cv.imshow('1 input', img)
+cv.imshow('2 gray + blur', blur)
+cv.imshow('3a mask (Otsu)', mask)
+cv.imshow('3b edges (Canny)', edges)
+cv.imshow('4-5 contours', result)
+print('찾은 덩어리 수:', len(contours), '→ 동전이 서로 붙어 있어 실제 개수(24)와 다릅니다. 4주차 프로젝트에서 해결!')
+`, desc: '<p>지금은 함수 이름을 외울 필요가 없습니다. <b>“한 단계의 출력이 다음 단계의 입력이 된다”</b>는 흐름만 눈으로 확인하세요. 붙어 있는 동전을 하나씩 세는 방법은 4주차 “동전·도형 분석기” 프로젝트에서 완성합니다.</p>' },
+      { type: 'text', html: `<h3>7. OpenCV는 어떤 라이브러리인가</h3>
+<p><b>OpenCV(Open Source Computer Vision Library)</b>는 세계에서 가장 널리 쓰이는 컴퓨터 비전 라이브러리입니다. OpenCV 공식 소개에 따르면
+<b>2,500개가 넘는 최적화된 알고리즘</b>을 갖추고 있고, 비영리 재단(Open Source Vision Foundation)이 운영하며, <b>Apache 2 라이선스</b>라서 기업도 무료로 사용·수정할 수 있습니다.
+C++로 작성되어 빠르고, Python · Java 등에서 사용할 수 있으며 Windows · Linux · macOS · Android · iOS · 웹 브라우저(OpenCV.js)에서 동작합니다.</p>` },
+      { type: 'table', head: ['연도', '주요 사건'],
+        rows: [
+          ['1999', '인텔(Intel) 연구 프로젝트로 시작 (Gary Bradski)'],
+          ['2000', '첫 공개 (알파 버전)'],
+          ['2006', 'OpenCV 1.0 정식 출시 (C 언어 중심)'],
+          ['2009', 'OpenCV 2.0 — C++ 인터페이스 도입, Python 바인딩 발전'],
+          ['2015', 'OpenCV 3.0 — 모듈 구조 정리, 추가 기능은 opencv_contrib 로 분리'],
+          ['2018', 'OpenCV 4.0 — 최신 C++, 딥러닝(dnn) 모듈 강화'],
+          ['2020', 'OpenCV 4.4 에 SIFT 특징점이 기본 포함(특허 만료), 4.5 부터 Apache 2 라이선스'],
+        ] },
+      { type: 'table', head: ['주요 모듈', '하는 일', '이 과정에서'],
+        rows: [
+          ['<code>core</code>', '기본 자료구조, 배열 연산', '1주차 기본 연산'],
+          ['<code>imgcodecs</code> · <code>videoio</code> · <code>highgui</code>', '이미지/동영상 읽기·쓰기, 창 · 마우스 · 트랙바', '1주차'],
+          ['<code>imgproc</code>', '색 변환, 필터, 기하 변환, 엣지, 컨투어, 히스토그램 — <b>이 과정의 중심</b>', '2~3주차'],
+          ['<code>video</code>', '움직임 분석, 배경 차분, 추적', '5주차 맛보기'],
+          ['<code>features2d</code> · <code>calib3d</code>', '특징점 매칭, 카메라 보정, 3D', '다음 단계 학습'],
+          ['<code>objdetect</code> · <code>dnn</code> · <code>ml</code>', '얼굴 · QR코드 검출, 딥러닝 모델 실행, 머신러닝', '다음 단계 학습'],
+        ] },
+      { type: 'text', html: `<h3>8. 영상처리 · OpenCV는 어디에 쓰일까?</h3>
+<p>OpenCV 공식 소개 페이지에는 Google · Microsoft · Intel · IBM · Sony · Honda · Toyota 같은 기업과 NASA 같은 기관, 수많은 스타트업이 OpenCV를 사용한다고 소개되어 있습니다.
+실제 사례로는 <b>스트리트뷰 이미지 이어 붙이기</b>, <b>감시 영상의 침입 감지</b>, <b>광산 장비 모니터링</b>, <b>로봇이 물체를 집도록 돕기</b>, <b>수영장 익수 사고 감지</b>,
+<b>활주로 이물질 점검</b>, <b>공장의 제품 라벨 검사</b>, <b>빠른 얼굴 검출</b> 등이 언급됩니다. 우리 주변의 예를 분야별로 정리하면 다음과 같습니다.</p>` },
+      { type: 'table', head: ['분야', '실제 활용 예', '쓰이는 기술', '이 과정의 관련 내용'],
+        rows: [
+          ['📱 스마트폰 · 카메라 앱', '문서 스캔 앱, 파노라마 사진, 사진 필터 · 보정', '원근 변환, 이미지 정합, 필터', '2주차 기하 변환 · 스무딩, 4주차 문서 스캐너 · 필터 앱'],
+          ['🚗 자동차 · 교통', '차선 인식, 번호판 인식, 교통량 측정', '엣지, 허프 직선, 컨투어, 문자 인식(OCR)', '3주차 Canny · 허프 변환 · 컨투어'],
+          ['🏭 제조 · 물류 (머신 비전)', '부품 불량 검사, 개수 세기, 치수 측정, 바코드 · QR 인식', '임계처리, 모폴로지, 컨투어 측정, 템플릿 매칭', '2~3주차, 4주차 동전 · 도형 분석기'],
+          ['🏥 의료 · 바이오', 'X-ray · CT 영상 대비 개선, 현미경 세포 수 세기', '히스토그램 평활화(CLAHE), 이진화, 컨투어', '3주차 히스토그램'],
+          ['📹 보안 · 스마트시티', 'CCTV 움직임 감지, 출입 인원 계수, 얼굴 검출', '프레임 차이, 배경 차분, 객체 검출', '1주차 동영상 움직임 감지 실습'],
+          ['🌾 농업 · 환경', '과일 크기 · 익은 정도 선별, 작물 병해 탐지, 드론 영상 분석', 'HSV 색 공간, 색상 분할', '2주차 색 공간 · 색상 추적'],
+          ['🤖 로봇 · 드론', '물체 추적, 장애물 인식, 위치 추정', '색상 추적, 특징점, 카메라 보정', '4주차 웹캠 가상 페인터(추적)'],
+          ['🎮 엔터테인먼트 · AR', '얼굴 필터, 가상 배경, 동작 인식 게임', '검출, 영역 분할, 영상 합성', '1주차 비트 연산 합성'],
+          ['⚽ 스포츠 · 방송', '공 · 선수 추적, 판정 보조, 하이라이트 생성', '추적, 템플릿 매칭, 배경 차분', '3주차 템플릿 매칭'],
+          ['🧾 문서 · 금융', '영수증 · 신분증 인식 전처리, 서명 비교', '이진화, 원근 보정, 윤곽 검출', '2주차 임계처리, 4주차 스캐너'],
+        ] },
+      { type: 'tip', html: `<p><b>생각해 보기:</b> 오늘 하루 동안 “카메라 + 소프트웨어”가 나를 대신해 무언가를 본 순간을 떠올려 보세요. 주차장 차단기의 번호판 인식, 스마트폰 얼굴 잠금 해제, 영상 통화의 배경 흐림… 그 안에는 오늘 배운 <b>픽셀 · 채널 · 흑백 변환</b>이 가장 아래에서 동작하고 있습니다.</p>` },
+      { type: 'text', html: `<h3>9. 더 알아보기 (참고 링크)</h3>
+<h4>OpenCV 공식</h4>
+<ul>
+<li><a href="https://opencv.org/about/" target="_blank" rel="noopener">OpenCV — About</a> : 라이브러리 소개, 활용 기업 · 사례</li>
+<li><a href="https://docs.opencv.org/4.x/d6/d00/tutorial_py_root.html" target="_blank" rel="noopener">OpenCV-Python Tutorials</a> : 이 강좌의 기반이 된 공식 튜토리얼</li>
+<li><a href="https://docs.opencv.org/4.x/de/d25/imgproc_color_conversions.html" target="_blank" rel="noopener">Color conversions</a> : RGB ↔ GRAY, HSV 등 색 변환 공식</li>
+<li><a href="https://docs.opencv.org/4.x/d1/dfb/intro.html" target="_blank" rel="noopener">Introduction</a> : OpenCV 모듈 구성과 기본 개념</li>
+<li><a href="https://github.com/opencv/opencv" target="_blank" rel="noopener">GitHub opencv/opencv</a> : 소스 코드와 샘플 이미지(samples/data)</li>
+</ul>
+<h4>위키백과 (한국어)</h4>
+<ul>
+<li><a href="https://ko.wikipedia.org/wiki/%EB%94%94%EC%A7%80%ED%84%B8_%ED%99%94%EC%83%81_%EC%B2%98%EB%A6%AC" target="_blank" rel="noopener">디지털 화상 처리</a> ·
+<a href="https://ko.wikipedia.org/wiki/%EC%BB%B4%ED%93%A8%ED%84%B0_%EB%B9%84%EC%A0%84" target="_blank" rel="noopener">컴퓨터 비전</a> ·
+<a href="https://ko.wikipedia.org/wiki/%EB%A8%B8%EC%8B%A0_%EB%B9%84%EC%A0%84" target="_blank" rel="noopener">머신 비전</a> ·
+<a href="https://ko.wikipedia.org/wiki/OpenCV" target="_blank" rel="noopener">OpenCV</a></li>
+<li><a href="https://ko.wikipedia.org/wiki/%EB%94%94%EC%A7%80%ED%84%B8_%EC%9D%B4%EB%AF%B8%EC%A7%80" target="_blank" rel="noopener">디지털 이미지</a> ·
+<a href="https://ko.wikipedia.org/wiki/%ED%99%94%EC%86%8C" target="_blank" rel="noopener">화소(픽셀)</a> ·
+<a href="https://ko.wikipedia.org/wiki/%EC%83%89_%EA%B9%8A%EC%9D%B4" target="_blank" rel="noopener">색 깊이</a> ·
+<a href="https://ko.wikipedia.org/wiki/%EC%9D%B4%EB%AF%B8%EC%A7%80_%EC%84%BC%EC%84%9C" target="_blank" rel="noopener">이미지 센서</a> ·
+<a href="https://ko.wikipedia.org/wiki/%EB%B2%A0%EC%9D%B4%EC%96%B4_%ED%95%84%ED%84%B0" target="_blank" rel="noopener">베이어 필터</a></li>
+<li><a href="https://ko.wikipedia.org/wiki/RGB" target="_blank" rel="noopener">RGB (가산 혼합)</a> ·
+<a href="https://ko.wikipedia.org/wiki/%ED%9A%8C%EC%83%89%EC%A1%B0" target="_blank" rel="noopener">회색조(그레이스케일)</a> ·
+<a href="https://ko.wikipedia.org/wiki/HSV_%EC%83%89_%EA%B3%B5%EA%B0%84" target="_blank" rel="noopener">HSV 색 공간</a></li>
+<li><a href="https://ko.wikipedia.org/wiki/%EA%B4%91%ED%95%99_%EB%AC%B8%EC%9E%90_%EC%9D%B8%EC%8B%9D" target="_blank" rel="noopener">광학 문자 인식(OCR)</a> ·
+<a href="https://ko.wikipedia.org/wiki/%EC%A6%9D%EA%B0%95_%ED%98%84%EC%8B%A4" target="_blank" rel="noopener">증강 현실</a> ·
+<a href="https://ko.wikipedia.org/wiki/%EB%AC%B4%EC%9D%B8_%EC%9E%90%EB%8F%99%EC%B0%A8" target="_blank" rel="noopener">무인(자율주행) 자동차</a></li>
+</ul>
+<h4>영어 자료</h4>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Digital_image_processing" target="_blank" rel="noopener">Digital image processing</a> ·
+<a href="https://en.wikipedia.org/wiki/Grayscale" target="_blank" rel="noopener">Grayscale</a> ·
+<a href="https://en.wikipedia.org/wiki/RGB_color_model" target="_blank" rel="noopener">RGB color model</a> ·
+<a href="https://en.wikipedia.org/wiki/Color_depth" target="_blank" rel="noopener">Color depth</a></li>
+</ul>` },
+    ],
+    practice: [
+      {
+        title: '실습 1 · 픽셀 탐정: 색의 정체를 숫자로 밝히기',
+        desc: `<p><code>messi5.jpg</code>의 여러 위치(잔디, 반바지, 양말, 축구공, 유니폼 줄무늬)의 BGR 값을 출력하고, 세 채널 중 <b>가장 큰 채널</b>로 어떤 색 계열인지 판정하는 함수 <code>dominant(bgr)</code>를 완성하세요.
+각 위치의 색을 100×100 크기의 색 견본으로 만들어 가로로 이어 붙여 보여주세요. 축구공(노랑)처럼 <b>두 채널이 함께 큰 색</b>은 어떻게 나오는지도 확인해 보세요.</p>`,
+        starter: String.raw`
+import cv2 as cv
+import numpy as np
+
+img = cv.imread('messi5.jpg')
+points = {
+    'grass': (100, 315), 'shorts': (275, 235), 'sock': (395, 255),
+    'ball': (352, 300), 'stripe A': (215, 160), 'stripe B': (240, 175),
+}
+
+def dominant(bgr):
+    # TODO: bgr = [B, G, R] 중 가장 큰 값이 어느 채널인지에 따라 'blue' / 'green' / 'red' 반환
+    return '?'
+
+swatches = []
+for name, (x, y) in points.items():
+    bgr = img[y, x]                      # NumPy 는 [y, x] 순서!
+    print(f'{name:9s} (x={x}, y={y}) BGR={bgr} → {dominant(bgr)}')
+    # TODO: np.full((100, 100, 3), bgr, np.uint8) 로 색 견본을 만들어 swatches 에 추가
+    swatch = np.zeros((100, 100, 3), np.uint8)
+    swatches.append(swatch)
+
+cv.imshow('swatches', np.hstack(swatches))
+`,
+        hint: `<p><code>np.argmax(bgr)</code>는 가장 큰 값의 위치(0, 1, 2)를 돌려줍니다. 0=B, 1=G, 2=R 이므로 <code>['blue', 'green', 'red'][np.argmax(bgr)]</code>처럼 쓸 수 있어요. 색 견본은 <code>np.full((100, 100, 3), bgr, np.uint8)</code>로 만듭니다.</p>`,
+        solution: String.raw`
+import cv2 as cv
+import numpy as np
+
+img = cv.imread('messi5.jpg')
+points = {
+    'grass': (100, 315), 'shorts': (275, 235), 'sock': (395, 255),
+    'ball': (352, 300), 'stripe A': (215, 160), 'stripe B': (240, 175),
+}
+
+def dominant(bgr):
+    b, g, r = [int(v) for v in bgr]
+    top = ['blue', 'green', 'red'][int(np.argmax([b, g, r]))]
+    # 두 번째로 큰 채널도 충분히 크면 "섞인 색"으로 표시
+    ordered = sorted([b, g, r], reverse=True)
+    if ordered[1] > ordered[0] * 0.8:
+        return top + ' (+ mixed, e.g. yellow = red + green)'
+    return top
+
+swatches = []
+for name, (x, y) in points.items():
+    bgr = img[y, x]
+    print(f'{name:9s} (x={x}, y={y}) BGR={bgr} → {dominant(bgr)}')
+    swatch = np.full((100, 100, 3), bgr, np.uint8)
+    cv.putText(swatch, name, (5, 90), cv.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+    swatches.append(swatch)
+
+marked = img.copy()
+for name, (x, y) in points.items():
+    cv.circle(marked, (x, y), 6, (0, 255, 255), 2)
+cv.imshow('points', marked)
+cv.imshow('swatches', np.hstack(swatches))
+`,
+      },
+      {
+        title: '실습 2 · 트랙바로 양자화 단계 바꿔 보기 (이미지 · 동영상 · 웹캠)',
+        desc: `<p>트랙바 <code>levels</code>(2~64)로 밝기 단계 수를 바꾸면서 <b>몇 단계부터 원본과 차이를 느끼기 어려운지</b> 찾아보세요. <code>process(frame)</code>를 사용하므로 입력 소스를 이미지, 🎞️ 동영상, 📷 웹캠 어느 것으로 바꿔도 동작합니다.
+결과 화면 왼쪽 위에 현재 단계 수를 글자로 표시하세요.</p>`,
+        starter: String.raw`
+import cv2 as cv
+import numpy as np
+
+def nothing(x):
+    pass
+
+cv.namedWindow('result')
+cv.createTrackbar('levels', 'result', 8, 64, nothing)
+
+def process(frame):
+    levels = max(2, cv.getTrackbarPos('levels', 'result'))   # 최소 2단계
+    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    step = 256 // levels
+    # TODO: gray 를 levels 단계로 양자화하세요 ( (gray // step) * step + step // 2 )
+    q = gray
+    # TODO: 왼쪽 위에 f'{levels} levels' 글자를 표시하세요 (흑백 영상이면 색은 255)
+    return q
+`,
+        hint: `<p>양자화 결과는 <code>((gray // step) * step + step // 2).astype(np.uint8)</code>입니다. 흑백 영상에 글자를 쓸 때 색은 숫자 하나(예: <code>255</code>)로 줍니다.</p>`,
+        solution: String.raw`
+import cv2 as cv
+import numpy as np
+
+def nothing(x):
+    pass
+
+cv.namedWindow('result')
+cv.createTrackbar('levels', 'result', 8, 64, nothing)
+
+def process(frame):
+    levels = max(2, cv.getTrackbarPos('levels', 'result'))
+    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    step = 256 // levels
+    q = ((gray // step) * step + step // 2).astype(np.uint8)
+    both = np.hstack([gray, q])                        # 왼쪽 원본, 오른쪽 양자화
+    cv.putText(both, 'original', (10, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, 255, 2)
+    cv.putText(both, f'{levels} levels', (gray.shape[1] + 10, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, 255, 2)
+    return both
+`,
+      },
+      {
+        title: '실습 3 · 채널 순서 실험: BGR 을 RGB 로 착각하면?',
+        desc: `<p><code>messi5.jpg</code>로 다음을 확인하세요. ① 채널 순서를 뒤집은 이미지(<code>img[:, :, ::-1]</code>)를 표시하면 유니폼 색이 어떻게 바뀌나요? ② 빨강 채널만 0으로 만든 이미지 ③ 컬러와 흑백 이미지의 <code>shape</code>, <code>nbytes</code>(메모리 바이트 수)를 출력해 <b>컬러가 흑백의 3배</b>인지 확인하세요.</p>`,
+        starter: String.raw`
+import cv2 as cv
+import numpy as np
+
+img = cv.imread('messi5.jpg')
+cv.imshow('original (BGR)', img)
+
+# ① TODO: 채널 순서를 뒤집은 이미지 (B <-> R 교환)
+swapped = img.copy()
+cv.imshow('channels reversed', swapped)
+
+# ② TODO: 빨강(R) 채널만 0으로 만든 이미지 (R 은 인덱스 2)
+no_red = img.copy()
+cv.imshow('no red', no_red)
+
+# ③ TODO: 흑백으로 바꾸고 shape 와 nbytes 비교
+gray = img
+print('color:', img.shape, img.nbytes, 'bytes')
+print('gray :', gray.shape, gray.nbytes, 'bytes')
+`,
+        hint: `<p>① <code>img[:, :, ::-1]</code> 는 마지막 축(채널)을 거꾸로 읽습니다. ② <code>no_red[:, :, 2] = 0</code> ③ <code>cv.cvtColor(img, cv.COLOR_BGR2GRAY)</code> 후 <code>nbytes</code>를 비교하세요.</p>`,
+        solution: String.raw`
+import cv2 as cv
+import numpy as np
+
+img = cv.imread('messi5.jpg')
+cv.imshow('original (BGR)', img)
+
+swapped = np.ascontiguousarray(img[:, :, ::-1])   # B <-> R 교환
+cv.imshow('channels reversed', swapped)
+
+no_red = img.copy()
+no_red[:, :, 2] = 0
+cv.imshow('no red', no_red)
+
+gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+print('color:', img.shape, img.nbytes, 'bytes')
+print('gray :', gray.shape, gray.nbytes, 'bytes')
+print('color / gray =', img.nbytes / gray.nbytes)
+print('→ 채널 순서를 뒤집으면 빨강 줄무늬와 파랑 줄무늬가 서로 바뀌고, 노란 공은 하늘색 계열이 됩니다.')
+`,
+      },
+    ],
+    quiz: [
+      { q: '640×480 크기의 8비트 컬러(3채널) 이미지 한 장의 원본 데이터 크기는?',
+        options: ['307,200 바이트', '921,600 바이트', '640 + 480 + 3 바이트', '1,843,200 바이트'], answer: 1,
+        explain: '픽셀 수 640×480 = 307,200개 × 채널 3개 × 1바이트(8비트) = 921,600 바이트(약 0.9MB)입니다. 흑백이면 1/3인 307,200 바이트입니다.' },
+      { q: '8비트 흑백 영상에서 픽셀 하나가 가질 수 있는 값의 범위는?',
+        options: ['0 ~ 1', '0 ~ 100', '-128 ~ 127', '0 ~ 255'], answer: 3,
+        explain: '8비트는 2⁸ = 256가지 값을 표현하므로 0(검정)부터 255(흰색)까지입니다. NumPy 자료형은 uint8 입니다.' },
+      { q: '<code>img = cv.imread(\'messi5.jpg\')</code>로 읽은 컬러 이미지에서 x=100, y=50 위치 픽셀의 값을 꺼내는 코드는?',
+        options: ['<code>img[100, 50]</code>', '<code>img[50, 100]</code>', '<code>img(100, 50)</code>', '<code>img.pixel(100, 50)</code>'], answer: 1,
+        explain: 'NumPy 배열은 [행, 열] = [y, x] 순서로 인덱싱합니다. OpenCV 그리기 함수의 좌표 (x, y) 순서와 반대라서 주의해야 합니다.' },
+      { q: 'OpenCV의 컬러 → 흑백 변환(COLOR_BGR2GRAY)에서 가중치가 가장 큰 채널과 그 이유로 옳은 것은?',
+        options: ['파랑 — 하늘과 바다가 많아서', '빨강 — 가장 먼저 저장되는 채널이라서', '초록 — 사람 눈이 초록 빛에 가장 민감해서', '세 채널 모두 같다 — 단순 평균이라서'], answer: 2,
+        explain: 'Y = 0.299R + 0.587G + 0.114B 입니다. 사람 눈이 초록에 가장 민감하므로 G의 가중치가 가장 큽니다. 그래서 순수 초록(150)이 순수 파랑(29)보다 훨씬 밝은 회색이 됩니다.' },
+      { q: '다음 중 “영상 → 정보”를 얻는 <b>컴퓨터 비전</b> 작업에 가장 가까운 것은?',
+        options: ['사진의 밝기를 조금 올리기', '영상의 잡음을 블러로 줄이기', '주차장 카메라로 차량 번호판 글자 읽기', '이미지를 절반 크기로 줄이기'], answer: 2,
+        explain: '밝기 보정 · 잡음 제거 · 크기 변환은 영상을 가공해 다시 영상을 만드는 영상처리입니다. 번호판 글자 읽기는 영상에서 “정보(문자열)”를 뽑아내는 컴퓨터 비전 작업이며, 그 안에서 영상처리가 전처리로 쓰입니다.' },
+    ],
+  },
+  /* =====================================================================
+   * w1-3 이미지 읽기 · 표시 · 저장
+   * ===================================================================== */
+  {
+    id: 'w1-3',
     summary: '이미지를 파일에서 읽고(imread), 화면에 보여주고(imshow), 파일로 저장하는(imwrite) 가장 기본적인 흐름을 익힙니다. Matplotlib로 표시할 때 생기는 BGR/RGB 색 뒤바뀜 문제도 해결해 봅니다.',
     goals: [
       'cv.imread()의 flag(IMREAD_COLOR / GRAYSCALE / UNCHANGED) 차이를 설명할 수 있다',
@@ -604,10 +1089,10 @@ for name in ['smarties.png', 'no_such_file.png', 'butterfly.jpg']:
   },
 
   /* =====================================================================
-   * w1-3 비디오와 웹캠 다루기
+   * w1-4 비디오와 웹캠 다루기
    * ===================================================================== */
   {
-    id: 'w1-3',
+    id: 'w1-4',
     summary: '비디오는 이미지(프레임)가 빠르게 이어진 것입니다. 튜토리얼의 VideoCapture 반복문 구조를 이해하고, 웹 실습 환경에서 동영상 파일(vtest.avi 등)의 정보 읽기·프레임 가져오기·탐색을 해 본 뒤, def process(frame): 로 동영상과 웹캠을 매 프레임 처리합니다.',
     goals: [
       '비디오·프레임·FPS·프레임 수의 개념과 cv.VideoCapture 의 역할을 설명할 수 있다',
@@ -999,10 +1484,10 @@ def process(frame):
   },
 
   /* =====================================================================
-   * w1-4 그리기 함수
+   * w1-5 그리기 함수
    * ===================================================================== */
   {
-    id: 'w1-4',
+    id: 'w1-5',
     summary: 'cv.line, cv.rectangle, cv.circle, cv.ellipse, cv.polylines, cv.putText로 이미지 위에 도형과 글자를 그립니다. 검출 결과 표시, 주석 달기 등 앞으로 모든 교시에서 쓰이는 기본 도구입니다.',
     goals: [
       'OpenCV 이미지 좌표계와 그리기 함수의 공통 인자(color, thickness, lineType)를 설명할 수 있다',
@@ -1311,10 +1796,10 @@ cv.imshow('name tag', card)
     ],
   },
   /* =====================================================================
-   * w1-5 마우스로 그리기 (페인트 브러시)
+   * w1-6 마우스로 그리기 (페인트 브러시)
    * ===================================================================== */
   {
-    id: 'w1-5',
+    id: 'w1-6',
     summary: '마우스 이벤트를 처리하는 콜백 함수를 만들어, 이미지 창을 클릭·드래그해 그림을 그리는 간단한 페인트 프로그램을 만듭니다. 웹 환경에 맞게 모드 전환을 우클릭/트랙바로 바꿔 봅니다.',
     goals: [
       '콜백(callback) 함수의 개념과 마우스 콜백의 인자(event, x, y, flags, param)를 설명할 수 있다',
@@ -1714,10 +2199,10 @@ cv.setMouseCallback('select', select)
   },
 
   /* =====================================================================
-   * w1-6 트랙바로 만드는 컬러 팔레트
+   * w1-7 트랙바로 만드는 컬러 팔레트
    * ===================================================================== */
   {
-    id: 'w1-6',
+    id: 'w1-7',
     summary: '트랙바(슬라이더)로 값을 조절하는 방법을 배웁니다. 튜토리얼의 R·G·B 컬러 팔레트를 웹 환경에 맞게 두 가지 방식(onChange 제자리 수정 / process에서 읽기)으로 만들고, 트랙바로 입력 이미지의 밝기·대비·이진화 기준을 실시간 조절합니다.',
     goals: [
       'cv.createTrackbar()의 인자(이름, 창, 초기값, 최대값, onChange)를 설명할 수 있다',
@@ -2076,10 +2561,10 @@ def process(frame):
   },
 
   /* =====================================================================
-   * w1-7 이미지 기본 연산
+   * w1-8 이미지 기본 연산
    * ===================================================================== */
   {
-    id: 'w1-7',
+    id: 'w1-8',
     summary: '픽셀 값을 읽고 바꾸기, 이미지 속성(shape·size·dtype) 확인, 관심 영역(ROI) 잘라 붙이기, 채널 분리·병합, 테두리(패딩) 만들기 등 이미지를 다루는 기본 연산을 익힙니다.',
     goals: [
       'img[y, x] 인덱싱과 item()으로 픽셀 값을 읽고 수정할 수 있다',
@@ -2403,10 +2888,10 @@ cv.imshow('reflect', reflect)
   },
 
   /* =====================================================================
-   * w1-8 이미지 산술 연산과 성능 측정
+   * w1-9 이미지 산술 연산과 성능 측정
    * ===================================================================== */
   {
-    id: 'w1-8',
+    id: 'w1-9',
     summary: '이미지 덧셈(포화 연산), 두 이미지를 섞는 블렌딩, 마스크와 비트 연산으로 로고를 자연스럽게 합성하는 방법을 배웁니다. 코드 실행 시간을 측정해 빠른 코드를 쓰는 습관을 들이고, 1주차 내용을 정리합니다.',
     goals: [
       'cv.add() 의 포화 연산과 NumPy 덧셈의 모듈로 연산 차이를 설명할 수 있다',
