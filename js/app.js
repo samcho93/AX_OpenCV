@@ -370,11 +370,11 @@
         <div class="hero-text">
           <div class="crumbs">OpenCV.org 공식 튜토리얼 기반 · Python</div>
           <h1>OpenCV-Python<br>입문부터 Image Processing까지</h1>
-          <p class="lead">5주 · 총 41교시(1주차 9교시, 2~5주차 각 8교시). <b>3주 교육</b>으로 영상처리 기초 이론과 이미지 입출력부터 필터·엣지·컨투어·히스토그램까지 익히고,
+          <p class="lead">5주 · 총 41교시(1주차 0교시 오리엔테이션 + 매주 1~8교시). <b>3주 교육</b>으로 영상처리 기초 이론과 이미지 입출력부터 필터·엣지·컨투어·히스토그램까지 익히고,
           <b>2주 프로젝트</b>로 문서 스캐너·동전 분석기·가상 페인터 같은 결과물을 직접 만듭니다.
           설치 없이 브라우저에서 바로 Python 코드를 실행하고, 이미지와 웹캠으로 결과를 확인하세요.</p>
           <div class="hero-actions">
-            <a class="btn primary" href="#w1-1">1주차 1교시부터 시작 →</a>
+            <a class="btn primary" href="#w1-0">1주차 0교시부터 시작 →</a>
             <a class="btn ghost" href="#guide">실습 환경 사용법</a>
           </div>
         </div>
