@@ -176,15 +176,6 @@
     html.push(`<a class="nav-item home" href="#guide" data-page="guide">🧭 실습 환경 사용법</a>`);
     html.push(`<a class="nav-item home" href="#images" data-page="images">🖼️ 샘플 이미지 · 동영상</a>`);
     html.push(`<a class="nav-item home nodes-link" href="nodes.html" target="ocv-nodes">🧩 노드 편집기 <span class="muted" style="font-weight:400;font-size:11.5px">(새 창)</span></a>`);
-    if (window.APPS && APPS.list.length) {
-      html.push(`<details class="week apps-nav" data-week="apps" ${openWeeks.has('apps') ? 'open' : ''}>
-        <summary><span class="week-no">🚀</span><span class="week-title">응용 예제 (실전 데모)</span><span class="badge app">${APPS.list.length}</span></summary>
-        <ol class="lessons">
-          <li><a class="nav-item nav-lesson" href="#apps" data-page="apps" data-search="응용 예제 갤러리"><span class="period">전체</span><span class="ltitle">데모 갤러리</span></a></li>
-          ${APPS.categories.map((c) => APPS.list.filter((a) => a.cat === c.id).map((a) => `<li><a class="nav-item nav-lesson" href="#app-${a.id}" data-page="app-${a.id}"
-            data-search="${escapeHtml(`${a.title} ${a.subtitle} ${(a.tech || []).join(' ')} ${c.title}`.toLowerCase())}"><span class="period">${a.icon}</span><span class="ltitle">${escapeHtml(a.title)}</span></a></li>`).join('')).join('')}
-        </ol></details>`);
-    }
     for (const w of C.weeks) {
       const ls = C.lessons.filter((l) => l.week === w.no);
       html.push(`<details class="week" data-week="${w.no}" ${openWeeks.has(w.no) ? 'open' : ''}>
@@ -194,6 +185,16 @@
           ${ls.map((l) => `<li><a class="nav-item nav-lesson ${done.has(l.id) ? 'done' : ''}" href="#${l.id}" data-lesson="${l.id}"
             data-search="${escapeHtml((l.title + ' ' + l.topics).toLowerCase())}">
             <span class="period">${l.period}교시</span><span class="ltitle">${escapeHtml(l.title)}</span></a></li>`).join('')}
+        </ol></details>`);
+    }
+    // 🚀 응용 예제는 맨 아래
+    if (window.APPS && APPS.list.length) {
+      html.push(`<details class="week apps-nav" data-week="apps" ${openWeeks.has('apps') ? 'open' : ''}>
+        <summary><span class="week-no">🚀</span><span class="week-title">응용 예제 (실전 데모)</span><span class="badge app">${APPS.list.length}</span></summary>
+        <ol class="lessons">
+          <li><a class="nav-item nav-lesson" href="#apps" data-page="apps" data-search="응용 예제 갤러리"><span class="period">전체</span><span class="ltitle">데모 갤러리</span></a></li>
+          ${APPS.categories.map((c) => APPS.list.filter((a) => a.cat === c.id).map((a) => `<li><a class="nav-item nav-lesson" href="#app-${a.id}" data-page="app-${a.id}"
+            data-search="${escapeHtml(`${a.title} ${a.subtitle} ${(a.tech || []).join(' ')} ${c.title}`.toLowerCase())}"><span class="period">${a.icon}</span><span class="ltitle">${escapeHtml(a.title)}</span></a></li>`).join('')).join('')}
         </ol></details>`);
     }
     el.nav.innerHTML = html.join('');
