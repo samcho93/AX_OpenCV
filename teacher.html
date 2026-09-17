@@ -5,7 +5,8 @@
   <title>교사용 · OpenCV-Python 강좌</title>
   <script>
     // 교사용 페이지: 같은 강좌를 교사용(요약 슬라이드 + 교사 노트) 모드로 연다
-    location.replace('index.html?role=teacher' + location.hash);
+    var q = new URLSearchParams(location.search); q.set('role', 'teacher');
+    location.replace('index.html?' + q + location.hash);
   </script>
 </head>
 <body>

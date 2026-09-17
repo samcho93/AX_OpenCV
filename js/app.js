@@ -5,11 +5,15 @@
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
   const C = window.COURSE;
+  // 과정마다 따로 저장할 값(진도 · 마지막 위치 · 열린 주차)은 과정 키를 붙임
+  const PER_COURSE = new Set(['done', 'last', 'openWeeks']);
+  const skey = (k) => 'ocv:' + (PER_COURSE.has(k) && C.key && C.key !== 'intro' ? C.key + ':' : '') + k;
   const store = {
-    get(k, d) { try { const v = localStorage.getItem('ocv:' + k); return v === null ? d : JSON.parse(v); } catch (_) { return d; } },
-    set(k, v) { try { localStorage.setItem('ocv:' + k, JSON.stringify(v)); } catch (_) {} },
-    del(k) { try { localStorage.removeItem('ocv:' + k); } catch (_) {} },
+    get(k, d) { try { const v = localStorage.getItem(skey(k)); return v === null ? d : JSON.parse(v); } catch (_) { return d; } },
+    set(k, v) { try { localStorage.setItem(skey(k), JSON.stringify(v)); } catch (_) {} },
+    del(k) { try { localStorage.removeItem(skey(k)); } catch (_) {} },
   };
+  const COURSE_NAME = `OpenCV-Python ${C.meta ? C.meta.name : '강좌'}`;
 
   const el = {
     nav: $('#navTree'), search: $('#navSearch'), content: $('#content'),
@@ -22,7 +26,8 @@
   const params = new URLSearchParams(location.search);
   if (['student', 'teacher'].includes(params.get('role'))) {
     store.set('role', params.get('role'));
-    history.replaceState(null, '', location.pathname + location.hash);   // 주소창의 ?role= 은 한 번만 적용
+    params.delete('role');   // 주소창의 ?role= 은 한 번만 적용 (?course= 는 유지)
+    history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params : '') + location.hash);
   }
   let role = store.get('role', 'student');
   const viewOf = () => store.get('view:' + role, role === 'teacher' ? 'slides' : 'doc');
@@ -120,10 +125,22 @@
     editor.scrollIntoView({ line: ln, ch: 0 }, 80);
   }
 
+  /* 교시에 필요한 추가 파일(assets: 'images/adv/left01.jpg', 'models/xxx.onnx' …)을 가상 폴더에 준비 */
+  const assetJobs = new Map();
+  function ensureAssets(l) {
+    if (!l || !(l.assets || []).length) return Promise.resolve();
+    if (!assetJobs.has(l.id)) {
+      assetJobs.set(l.id, Promise.all(l.assets.map((p) => Runtime.loadAsset(p, p.split('/').pop(), { desc: `${l.week}주 ${l.period}교시` })))
+        .catch((e) => { assetJobs.delete(l.id); Runtime.log('추가 파일을 불러오지 못했습니다: ' + e.message, 'err'); }));
+    }
+    return assetJobs.get(l.id);
+  }
+
   async function run() {
     if (el.runBtn.disabled) return;
     el.runBtn.disabled = true;
     el.runBtn.textContent = '⏳ 실행 중';
+    await ensureAssets(current);
     const res = await Runtime.run(editor.getValue());
     el.runBtn.disabled = false;
     el.runBtn.textContent = '▶ 실행';
@@ -370,6 +387,7 @@
 
   function renderLesson(l) {
     current = l;
+    ensureAssets(l);
     if (viewOf() === 'slides') return renderSlides(l);
     Slides.unmount();
     el.content.classList.remove('slides-mode');
@@ -453,7 +471,7 @@
 
     const saved = store.get('code:' + l.id, null);
     setEditor(saved || defaultCode(l), saved ? '이어서 작성' : '기본 예제');
-    document.title = `${l.week}주 ${l.period}교시 · ${l.title} | OpenCV-Python 강좌`;
+    document.title = `${l.week}주 ${l.period}교시 · ${l.title} | ${COURSE_NAME}`;
   }
 
   function renderSlides(l) {
@@ -472,7 +490,7 @@
     });
     const saved = store.get('code:' + l.id, null);
     setEditor(saved || defaultCode(l), saved ? '이어서 작성' : '기본 예제');
-    document.title = `${l.week}주 ${l.period}교시 · ${l.title} (슬라이드) | OpenCV-Python 강좌`;
+    document.title = `${l.week}주 ${l.period}교시 · ${l.title} (슬라이드) | ${COURSE_NAME}`;
   }
 
   el.content.addEventListener('click', (e) => {
@@ -499,13 +517,12 @@
     el.content.innerHTML = `<article class="lesson home">
       <header class="hero">
         <div class="hero-text">
-          <div class="crumbs">OpenCV.org 공식 튜토리얼 기반 · Python</div>
-          <h1>OpenCV-Python<br>입문부터 Image Processing까지</h1>
-          <p class="lead">5주 · 총 41교시(1주차 0교시 오리엔테이션 + 매주 1~8교시). <b>3주 교육</b>으로 영상처리 기초 이론과 이미지 입출력부터 필터·엣지·컨투어·히스토그램까지 익히고,
-          <b>2주 프로젝트</b>로 문서 스캐너·동전 분석기·가상 페인터 같은 결과물을 직접 만듭니다.
-          설치 없이 브라우저에서 바로 Python 코드를 실행하고, 이미지와 웹캠으로 결과를 확인하세요.</p>
+          <div class="crumbs"><span class="badge ${C.key === 'advanced' ? 'proj' : 'edu'}">${escapeHtml(C.meta.name)}</span> ${escapeHtml(C.meta.crumb)}</div>
+          <h1>${C.meta.heroTitle}</h1>
+          <p class="lead">${C.meta.heroLead}</p>
           <div class="hero-actions">
-            <a class="btn primary" href="#w1-0">1주차 0교시부터 시작 →</a>
+            <a class="btn primary" href="#${C.meta.startId}">${C.byId[C.meta.startId].week}주차 ${C.byId[C.meta.startId].period}교시부터 시작 →</a>
+            <a class="btn ghost" href="${C.key === 'advanced' ? 'index.html' : 'index.html?course=advanced'}">${C.key === 'advanced' ? '📘 입문 과정 보기' : '🎓 심화 과정 보기'}</a>
             <a class="btn ghost" href="#guide">실습 환경 사용법</a>
             ${window.APPS && APPS.list.length ? `<a class="btn ghost" href="#apps">🚀 응용 예제 ${APPS.list.length}종</a>` : ''}
             ${role === 'teacher' ? '<a class="btn ghost" href="presenter.html" target="ocv-presenter">🗒 발표자 창 열기</a>' : ''}
@@ -518,17 +535,17 @@
       <div class="block table-wrap"><table class="plan">
         <thead><tr><th>구분</th><th>주차</th><th>주제</th><th>핵심 결과물</th></tr></thead>
         <tbody>
-          <tr><td rowspan="3"><span class="badge edu">교육</span></td><td>1주</td><td>영상처리 기초 이론 · 입문 · GUI · 코어 연산</td><td>픽셀·색 이해, 그림판, 컬러 팔레트, 로고 합성</td></tr>
-          <tr><td>2주</td><td>Image Processing Ⅰ</td><td>색상 추적기, 원근 보정, 이진화·필터 비교</td></tr>
-          <tr><td>3주</td><td>Image Processing Ⅱ</td><td>엣지·컨투어 분석, 히스토그램, 템플릿·허프 검출</td></tr>
-          <tr><td rowspan="2"><span class="badge proj">프로젝트</span></td><td>4주</td><td>가이드 프로젝트 · 기획</td><td>문서 스캐너, 동전·도형 분석기, 가상 페인터, 필터 앱</td></tr>
-          <tr><td>5주</td><td>구현 · 발표</td><td>팀 프로젝트 완성, 발표, 회고</td></tr>
+          ${C.meta.plan.map(([kind, wk, topic, out], i, arr) => {
+            const first = i === 0 || arr[i - 1][0] !== kind;
+            const span = arr.filter((r) => r[0] === kind).length;
+            return `<tr>${first ? `<td rowspan="${span}"><span class="badge ${kind === '교육' ? 'edu' : 'proj'}">${kind}</span></td>` : ''}<td>${wk}</td><td>${topic}</td><td>${out}</td></tr>`;
+          }).join('')}
         </tbody></table></div>
       ${rows}
     </article>`;
     el.content.scrollTop = 0;
     setEditor(`# 자유 실습 공간입니다. 왼쪽에서 교시를 고르면 해당 예제가 열립니다.\nimport cv2 as cv\nimport numpy as np\n\nimg = cv.imread('messi5.jpg')\nprint(img.shape)\ncv.imshow('messi', img)\n`, '자유 실습');
-    document.title = 'OpenCV-Python 5주 강좌';
+    document.title = `${COURSE_NAME} · 5주 강좌`;
   }
 
   function renderGuide() {
@@ -635,7 +652,7 @@
     const isApp = key === 'apps' || (key.startsWith('app-') && window.APPS && APPS.byId[key.slice(4)]);
     if (document.body.classList.contains('app-page') && !isApp) Runtime.stopLive();
     document.body.classList.toggle('app-page', !!isApp);
-    if (isApp) { current = null; document.title = key === 'apps' ? '🚀 응용 예제 | OpenCV-Python 강좌' : `${APPS.byId[key.slice(4)].title} | 응용 예제`; }
+    if (isApp) { current = null; document.title = key === 'apps' ? `🚀 응용 예제 | ${COURSE_NAME}` : `${APPS.byId[key.slice(4)].title} | 응용 예제`; }
     highlightNav(C.byId[key] || ['guide', 'images'].includes(key) || isApp ? key : 'home');
     store.set('last', key);
   }
@@ -679,7 +696,18 @@
 
   $('#clearConsoleBtn').addEventListener('click', () => Runtime.clearConsole());
 
-  window.App = { markErrorLine, run, editor, route, openInNodes };
+  window.App = { markErrorLine, run, editor, route, openInNodes, ensureAssets };
+
+  // 과정 이름 · 과정 전환
+  const sub = document.querySelector('.brand-sub');
+  if (sub && C.meta) sub.textContent = C.meta.brandSub;
+  const brandTitle = document.querySelector('.brand-title');
+  if (brandTitle && C.key === 'advanced') brandTitle.textContent = 'OpenCV-Python 심화';
+  const switcher = document.createElement('div');
+  switcher.className = 'course-switch';
+  switcher.innerHTML = `<a href="index.html" class="${C.key !== 'advanced' ? 'active' : ''}" title="입문 · Image Processing">📘 입문 과정</a>
+    <a href="index.html?course=advanced" class="${C.key === 'advanced' ? 'active' : ''}" title="특징점 · 3D · 머신러닝 · 객체 검출">🎓 심화 과정</a>`;
+  document.querySelector('.role-switch').before(switcher);
 
   renderNav();
   renderProgress();

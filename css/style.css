@@ -402,6 +402,10 @@ body.editor-folded .hgutter, body.editor-folded .editor-host { display: none; }
 .lightbox-cap { color: #ddd; font-size: 13px; margin-top: 8px; }
 
 /* ------------------------------------------------------ 역할 · 보기 도구 */
+.course-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 0 14px 6px; }
+.course-switch a { text-align: center; font: 700 12.5px var(--font); padding: 6px 0; border-radius: 8px; border: 1px solid var(--border); color: var(--text-2); text-decoration: none !important; background: var(--surface); }
+.course-switch a:hover { border-color: var(--accent); color: var(--accent); }
+.course-switch a.active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 .role-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 0 14px 10px; padding: 3px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; }
 .role-switch button { border: 0; background: transparent; color: var(--muted); font: 600 12.5px var(--font); padding: 5px 0; border-radius: 6px; cursor: pointer; }
 .role-switch button.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }

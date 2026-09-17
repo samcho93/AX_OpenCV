@@ -166,8 +166,10 @@ def main():
 
 
 def _main():
-    prefix = sys.argv[1] if len(sys.argv) > 1 else ''
-    dump = subprocess.run(['node', os.path.join(ROOT, 'tools', 'dump_lessons.js'), prefix], capture_output=True,
+    # 사용: python tools/validate.py [prefix] [--course advanced]   (prefix 가 a1, a2 … 이면 심화 과정)
+    import shutil
+    args = sys.argv[1:]
+    dump = subprocess.run(['node', os.path.join(ROOT, 'tools', 'dump_lessons.js'), *args], capture_output=True,
                           text=True, encoding='utf-8')
     if dump.stderr.strip():
         print(dump.stderr)
@@ -175,6 +177,14 @@ def _main():
         print('✗ 강좌 JS 파일에 문법 오류가 있습니다.')
         sys.exit(2)
     data = json.loads(dump.stdout)
+    # 교시별 추가 파일(assets)을 작업 폴더에 파일 이름만으로 복사 (브라우저 가상 폴더와 같은 구조)
+    for rel in data.get('assets', []):
+        src = os.path.join(ROOT, rel)
+        if os.path.exists(src):
+            shutil.copy(src, os.path.join(WORKDIR, os.path.basename(rel)))
+        else:
+            print(f'✗ assets 파일 없음: {rel}')
+    print(f"[{data.get('course', 'intro')}] 추가 파일 {len(data.get('assets', []))}개")
     for s in data['stats']:
         flag = ' (미작성)' if s['placeholder'] else ''
         print(f"  {s['id']}: blocks={s['blocks']} practice={s['practice']} quiz={s['quiz']}{flag}")

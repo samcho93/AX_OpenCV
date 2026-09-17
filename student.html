@@ -5,7 +5,8 @@
   <title>학생용 · OpenCV-Python 강좌</title>
   <script>
     // 학생용 페이지: 문서형 강좌 + 실습 모드로 연다
-    location.replace('index.html?role=student' + location.hash);
+    var q = new URLSearchParams(location.search); q.set('role', 'student');
+    location.replace('index.html?' + q + location.hash);
   </script>
 </head>
 <body>

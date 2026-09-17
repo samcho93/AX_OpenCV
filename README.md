@@ -12,6 +12,24 @@ OpenCV.org 공식 Python 튜토리얼을 기반으로 한 **초보자용 5주 ·
 | 프로젝트 | 4주 | 가이드 프로젝트(문서 스캐너, 동전·도형 분석기, 웹캠 가상 페인터, 사진 필터 앱) · 팀 프로젝트 기획 · 프로토타입 |
 | 프로젝트 | 5주 | 구현(모듈화 → 알고리즘 → 실시간 → 인터랙션) · 디버깅 · 발표 · 회고 |
 
+## 🎓 심화 과정 (`index.html?course=advanced` 또는 `advanced.html`)
+
+입문 과정 수료자를 위한 **5주 · 41교시** 심화 과정입니다. 형식(교시 내용 · 실습 · 퀴즈 · 교사용 요약 슬라이드 · 노드 편집기 연동)은 입문 과정과 같고,
+OpenCV.org Python 튜토리얼의 *Feature Detection and Description*, *Camera Calibration and 3D Reconstruction*,
+*Machine Learning*, *Object Detection* 을 기반으로 합니다. 강좌 상단의 과정 전환 버튼으로 입문 ↔ 심화를 오갈 수 있으며, 진도는 과정별로 따로 저장됩니다.
+
+| 구분 | 주차 | 내용 |
+|---|---|---|
+| 교육 | 1주 | 특징점 검출과 기술 — Harris · Shi-Tomasi · SIFT · FAST/BRIEF(AKAZE · BRISK) · ORB · 특징점 매칭 · 호모그래피 |
+| 교육 | 2주 | 카메라 캘리브레이션과 3D — 카메라 모델 · 체스보드 · 캘리브레이션 · 왜곡 보정 · 자세 추정(AR) · 에피폴라 기하 · 스테레오 깊이 · ArUco |
+| 교육 | 3주 | 머신러닝과 객체 검출 — kNN · SVM(+HOG) 손글씨 OCR · K-Means · Haar 캐스케이드 · HOG 보행자 · DNN(YOLOX · YuNet) |
+| 프로젝트 | 4주 | 가이드 프로젝트(파노라마, 평면 물체 AR 오버레이, 캘리브레이션 실측, 손글씨 숫자 인식기) · 팀 프로젝트 기획 · 프로토타입 |
+| 프로젝트 | 5주 | 구현(데이터 · 학습/평가 · 실시간 최적화 · 3D 결합) · 테스트/디버깅 · 발표 · 회고 |
+
+- 심화 교시용 이미지: `images/adv/` (OpenCV 공식 samples/data — 체스보드 left01~14, 스테레오 쌍, box/box_in_scene, graf, 파노라마, digits, letter-recognition)
+- 작성 가이드: `docs/ADVANCED_GUIDE.md`, 검증: `python tools/validate.py a1`, `node tools/check_slides.js a1`
+- 교사용/학생용 페이지도 `teacher.html?course=advanced`, `student.html?course=advanced` 로 열 수 있습니다.
+
 ## 실행 방법
 
 1. `start.bat` 을 더블클릭합니다. (Python 이 설치되어 있어야 합니다)
@@ -74,12 +92,17 @@ OpenCV.org 공식 Python 튜토리얼을 기반으로 한 **초보자용 5주 ·
 ```
 index.html            메인 페이지
 css/style.css         스타일 (라이트/다크)
-js/course.js          5주 × 8교시 커리큘럼(제목·OpenCV.org 참고 링크)
+js/course.js          입문 5주 × 8교시 커리큘럼(제목·OpenCV.org 참고 링크)
+js/course-advanced.js 심화 5주 × 8교시 커리큘럼
 js/app.js             네비게이션 · 강좌 렌더링 · 에디터 · 진도 저장
 js/runtime.js         Pyodide 로드, 결과 패널, 웹캠, 실시간 process(frame) 루프
 js/webcv-bridge.js    cv2 GUI 함수(imshow, 트랙바, 마우스, VideoCapture …)를 웹 패널에 연결하는 Python 코드
 js/images-data.js     샘플 이미지 묶음 (tools/build_images.py 로 생성)
-lessons/week1~5.js    교시별 상세 내용
+lessons/week1~5.js    교시별 상세 내용 (입문)
+lessons-adv/week1~5.js 심화 과정 교시 내용
+slides/, slides-adv/  교사용 요약 슬라이드 (입문 / 심화)
+images/adv/           심화 과정 이미지 · 데이터
+advanced.html         심화 과정 바로가기
 images/               OpenCV 공식 저장소 샘플 이미지
 videos/               OpenCV 공식 저장소 샘플 동영상 (vtest, Megamind, cup — 브라우저용 H.264 MP4 로 변환)
 docs/LESSON_GUIDE.md  강의 콘텐츠 작성 가이드

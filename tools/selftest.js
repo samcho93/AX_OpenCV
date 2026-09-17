@@ -19,6 +19,7 @@ window.selftest = async function selftest(prefix = '', { interact = true } = {})
   const progress = (window.selftestProgress = { total: snippets.length, done: 0, failures });
   const text = () => document.querySelector('#console').innerText;
   for (const s of snippets) {
+    if (window.App && App.ensureAssets) await App.ensureAssets(COURSE.byId[s.id]);
     Runtime.clearConsole();
     const t0 = performance.now();
     const res = await Runtime.run(tidy(s.code));

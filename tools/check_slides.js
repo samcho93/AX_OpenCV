@@ -1,5 +1,5 @@
 // 요약 슬라이드(slides/weekN.js) 검사기
-// 사용: node tools/check_slides.js [lessonIdPrefix]
+// 사용: node tools/check_slides.js [lessonIdPrefix] [--course advanced]
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -14,8 +14,12 @@ const load = (f) => {
   if (!fs.existsSync(p)) return;
   vm.runInContext(fs.readFileSync(p, 'utf8'), ctx, { filename: f });
 };
-load('js/course.js');
-for (let w = 1; w <= 5; w++) load(`lessons/week${w}.js`);
+const argv = process.argv.slice(2);
+const ci = argv.indexOf('--course');
+const course = ci >= 0 ? argv[ci + 1] : (argv.find((a) => /^a\d/.test(a)) ? 'advanced' : 'intro');
+const ADV = course === 'advanced';
+load(ADV ? 'js/course-advanced.js' : 'js/course.js');
+for (let w = 1; w <= 5; w++) load(`${ADV ? 'lessons-adv' : 'lessons'}/week${w}.js`);
 // slides.js 의 addSlides 만 흉내 (DOM 없이)
 ctx.COURSE.addSlides = function (map) {
   for (const [id, deck] of Object.entries(map)) {
@@ -25,10 +29,10 @@ ctx.COURSE.addSlides = function (map) {
   }
 };
 for (let w = 1; w <= 5; w++) {
-  try { load(`slides/week${w}.js`); } catch (e) { console.log(`✗ [SYNTAX] slides/week${w}.js: ${e.message}`); process.exitCode = 1; }
+  try { load(`${ADV ? 'slides-adv' : 'slides'}/week${w}.js`); } catch (e) { console.log(`✗ [SYNTAX] slides/week${w}.js: ${e.message}`); process.exitCode = 1; }
 }
 
-const prefix = process.argv[2] || '';
+const prefix = argv.filter((a, i) => !a.startsWith('--') && (ci < 0 || i !== ci + 1))[0] || '';
 const text = (h) => String(h || '').replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
 let errors = 0, warns = 0, done = 0;
 const err = (id, m) => { errors++; console.log(`✗ ${id}: ${m}`); };

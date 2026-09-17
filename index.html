@@ -118,19 +118,19 @@
 
   <!-- 데이터 -->
   <script src="js/images-data.js"></script>
-  <script src="js/course.js"></script>
-  <script src="lessons/week1.js"></script>
-  <script src="lessons/week2.js"></script>
-  <script src="lessons/week3.js"></script>
-  <script src="lessons/week4.js"></script>
-  <script src="lessons/week5.js"></script>
-  <!-- 슬라이드(요약 교안) -->
-  <script src="js/slides.js"></script>
-  <script src="slides/week1.js"></script>
-  <script src="slides/week2.js"></script>
-  <script src="slides/week3.js"></script>
-  <script src="slides/week4.js"></script>
-  <script src="slides/week5.js"></script>
+  <script>
+    /* 과정 선택: index.html = 입문 과정, index.html?course=advanced (advanced.html) = 심화 과정 */
+    (function () {
+      var course = new URLSearchParams(location.search).get('course') === 'advanced' ? 'advanced' : 'intro';
+      var dir = course === 'advanced' ? '-adv' : '';
+      var files = [course === 'advanced' ? 'js/course-advanced.js' : 'js/course.js'];
+      for (var i = 1; i <= 5; i++) files.push('lessons' + dir + '/week' + i + '.js');
+      files.push('js/slides.js');
+      for (var j = 1; j <= 5; j++) files.push('slides' + dir + '/week' + j + '.js');
+      window.COURSE_KEY = course;
+      for (var k = 0; k < files.length; k++) document.write('<script src="' + files[k] + '"><\/script>');
+    })();
+  </script>
   <!-- 🚀 응용 예제 -->
   <script src="js/apps.js"></script>
   <script src="apps/dnn.js"></script>

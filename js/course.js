@@ -91,8 +91,27 @@
   });
 
   window.COURSE = {
+    key: 'intro',
     title: 'OpenCV-Python 입문 · Image Processing',
     docRoot: DOC + 'd6/d00/tutorial_py_root.html',
+    /* 화면에 쓰는 과정 정보 (홈 화면 · 내비게이션) */
+    meta: {
+      name: '입문 과정',
+      brandSub: '5주 · 41교시 입문 과정',
+      crumb: 'OpenCV.org 공식 튜토리얼 기반 · Python',
+      heroTitle: 'OpenCV-Python<br>입문부터 Image Processing까지',
+      heroLead: `5주 · 총 41교시(1주차 0교시 오리엔테이션 + 매주 1~8교시). <b>3주 교육</b>으로 영상처리 기초 이론과 이미지 입출력부터 필터·엣지·컨투어·히스토그램까지 익히고,
+          <b>2주 프로젝트</b>로 문서 스캐너·동전 분석기·가상 페인터 같은 결과물을 직접 만듭니다.
+          설치 없이 브라우저에서 바로 Python 코드를 실행하고, 이미지와 웹캠으로 결과를 확인하세요.`,
+      startId: 'w1-0',
+      plan: [
+        ['교육', '1주', '영상처리 기초 이론 · 입문 · GUI · 코어 연산', '픽셀·색 이해, 그림판, 컬러 팔레트, 로고 합성'],
+        ['교육', '2주', 'Image Processing Ⅰ', '색상 추적기, 원근 보정, 이진화·필터 비교'],
+        ['교육', '3주', 'Image Processing Ⅱ', '엣지·컨투어 분석, 히스토그램, 템플릿·허프 검출'],
+        ['프로젝트', '4주', '가이드 프로젝트 · 기획', '문서 스캐너, 동전·도형 분석기, 가상 페인터, 필터 앱'],
+        ['프로젝트', '5주', '구현 · 발표', '팀 프로젝트 완성, 발표, 회고'],
+      ],
+    },
     weeks,
     lessons,
     byId: Object.fromEntries(lessons.map((l) => [l.id, l])),
