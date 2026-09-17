@@ -108,6 +108,7 @@
   let compiled = null;
   let running = false, rerun = false, runTimer = 0;
   let lastResult = null;
+  let relayoutAfterRun = false;
 
   function scheduleRun(delay = 650) {
     clearTimeout(runTimer);
@@ -139,6 +140,13 @@
     renderStatus();
     updatePreview();
     refreshThumbs();
+    if (relayoutAfterRun) {
+      // 새로 불러온 그래프: 썸네일이 붙어 커진 노드 크기로 한 번 더 정렬 (겹침 방지)
+      relayoutAfterRun = false;
+      editor.autoLayout();
+      refreshThumbs();
+      store.set('nodes:graph', editor.graph);
+    }
     if (rerun) { rerun = false; scheduleRun(50); }
   }
 
@@ -465,7 +473,7 @@
     editor.status.clear();
     lastResult = null;
     editor.setGraph(graph, { fit: !layout });
-    if (layout) editor.autoLayout();
+    if (layout) { editor.autoLayout(); relayoutAfterRun = true; }
     $('#graphTitle').value = graph.title || '';
     snapshot();
     store.set('nodes:graph', editor.graph);

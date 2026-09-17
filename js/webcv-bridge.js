@@ -383,8 +383,22 @@ def _patch_matplotlib():
 _NODE_VALUES = {}
 
 
+def _snap(v, depth=0):
+    """노드가 실행된 '그 순간'의 값을 저장 — 뒤 노드가 같은 배열을 제자리에서 바꿔도 이 노드의 프리뷰는 유지"""
+    if isinstance(v, np.ndarray):
+        return v.copy()
+    if isinstance(v, cv2.UMat):
+        return v.get().copy()
+    if depth == 0 and isinstance(v, (list, tuple)) and len(v) <= 64:
+        items = [_snap(x, 1) for x in v]
+        return items if isinstance(v, list) else tuple(items)
+    if isinstance(v, list):
+        return list(v)
+    return v
+
+
 def _pv(nid, *vals):
-    _NODE_VALUES[nid] = vals
+    _NODE_VALUES[nid] = tuple(_snap(v) for v in vals)
 
 
 def _as_image(v):
