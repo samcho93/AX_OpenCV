@@ -3121,7 +3121,8 @@ cv.imshow('result', out3)
 <p>이번 주에 배운 함수들을 한눈에 정리했습니다. 이 함수들은 2~5주차 내내 기본 도구로 계속 등장합니다. 이름만 보고 무슨 일을 하는지 떠오르는지 점검해 보세요.</p>` },
       { type: 'table', head: ['교시', '핵심 함수 / 문법', '기억할 점'],
         rows: [
-          ['1 · 환경·NumPy', '<code>np.zeros</code>, <code>shape</code>, <code>dtype</code>, 슬라이싱', '이미지 = (높이, 너비, 채널) uint8 배열, BGR 순서'],
+          ['0 · 환경·NumPy', '<code>np.zeros</code>, <code>shape</code>, <code>dtype</code>, 슬라이싱', '이미지 = (높이, 너비, 채널) uint8 배열'],
+          ['1 · 기초 이론', '픽셀 · 해상도 · 채널 · 비트 깊이, <code>COLOR_BGR2GRAY</code>', '좌표 (x, y) ↔ <code>img[y, x]</code>, OpenCV 는 BGR 순서'],
           ['2 · 이미지 입출력', '<code>cv.imread</code>, <code>cv.imshow</code>, <code>cv.imwrite</code>, <code>cv.cvtColor</code>', '읽기 실패 시 None, Matplotlib 는 RGB 변환 필요'],
           ['3 · 비디오', '<code>cv.VideoCapture</code>, <code>cap.read</code>, <code>cv.flip</code>, <code>def process(frame)</code>', '웹에서는 while 루프 대신 process'],
           ['4 · 그리기', '<code>cv.line</code>, <code>rectangle</code>, <code>circle</code>, <code>ellipse</code>, <code>polylines</code>, <code>putText</code>', '좌표는 (x, y), thickness=-1 은 채우기, 한글 불가'],

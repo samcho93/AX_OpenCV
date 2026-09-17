@@ -39,6 +39,10 @@
         </div>
         <button id="themeBtn" class="icon-btn" title="라이트/다크 전환" aria-label="테마 전환">◐</button>
       </div>
+      <div class="role-switch" role="group" aria-label="보기 대상">
+        <button data-role="student" title="학생용: 문서 형태의 강좌 + 실습">🎓 학생용</button>
+        <button data-role="teacher" title="교사용: 요약 슬라이드 + 교사 노트 + 정답 · 타이머">🧑‍🏫 교사용</button>
+      </div>
       <div class="progress-wrap">
         <div class="progress-label"><span>학습 진도</span><span id="progressText">0 / 40</span></div>
         <div class="progress"><div id="progressBar" class="progress-fill"></div></div>
@@ -56,6 +60,7 @@
         <div class="editor-bar">
           <span class="editor-title">🧪 실습 코드 <span id="editorLabel" class="muted"></span></span>
           <span class="spacer"></span>
+          <button id="foldBtn" class="btn ghost" title="에디터 접기/펼치기 (슬라이드를 크게 보기)">▾ 접기</button>
           <button id="resetBtn" class="btn ghost" title="이 교시의 기본 예제로 되돌리기">↺ 초기화</button>
           <button id="copyBtn" class="btn ghost" title="코드 복사">⧉ 복사</button>
           <button id="stopBtn" class="btn ghost" title="실시간 처리 정지" disabled>■ 정지</button>
@@ -121,6 +126,13 @@
   <script src="lessons/week3.js"></script>
   <script src="lessons/week4.js"></script>
   <script src="lessons/week5.js"></script>
+  <!-- 슬라이드(요약 교안) -->
+  <script src="js/slides.js"></script>
+  <script src="slides/week1.js"></script>
+  <script src="slides/week2.js"></script>
+  <script src="slides/week3.js"></script>
+  <script src="slides/week4.js"></script>
+  <script src="slides/week5.js"></script>
   <!-- 실행 환경 -->
   <script src="js/webcv-bridge.js"></script>
   <script src="js/runtime.js"></script>

@@ -18,6 +18,55 @@
     editorLabel: $('#editorLabel'), themeBtn: $('#themeBtn'),
   };
 
+  /* ------------------------------------------------ 역할(학생/교사) · 보기 방식 --- */
+  const params = new URLSearchParams(location.search);
+  if (['student', 'teacher'].includes(params.get('role'))) {
+    store.set('role', params.get('role'));
+    history.replaceState(null, '', location.pathname + location.hash);   // 주소창의 ?role= 은 한 번만 적용
+  }
+  let role = store.get('role', 'student');
+  const viewOf = () => store.get('view:' + role, role === 'teacher' ? 'slides' : 'doc');
+
+  const foldBtn = $('#foldBtn');
+  function applyFold() {
+    const folded = store.get('editorFolded:' + role, role === 'teacher');
+    document.body.classList.toggle('editor-folded', folded);
+    foldBtn.textContent = folded ? '▴ 펼치기' : '▾ 접기';
+    setTimeout(() => { if (window.App && App.editor) App.editor.refresh(); if (Slides.active) Slides.active.fit(); }, 30);
+  }
+  foldBtn.addEventListener('click', () => {
+    store.set('editorFolded:' + role, !document.body.classList.contains('editor-folded'));
+    applyFold();
+  });
+
+  function applyRole() {
+    applyFold();
+    document.body.classList.toggle('role-teacher', role === 'teacher');
+    $$('.role-switch button').forEach((b) => b.classList.toggle('active', b.dataset.role === role));
+  }
+  $$('.role-switch button').forEach((b) => b.addEventListener('click', () => {
+    if (role === b.dataset.role) return;
+    role = b.dataset.role;
+    store.set('role', role);
+    cleanHash();
+    applyRole();
+    route();
+  }));
+  applyRole();
+
+  /** 주소의 #교시@슬라이드번호 에서 슬라이드 번호를 떼어냄 (보기 전환 시 딥링크가 다시 적용되지 않도록) */
+  function cleanHash() {
+    const h = location.hash.split('@')[0];
+    if (h !== location.hash) history.replaceState(null, '', location.pathname + location.search + h);
+  }
+
+  function setView(v) {
+    cleanHash();
+    store.set('view:' + role, v);
+    if (v === 'doc') Slides.unmount();
+    route();
+  }
+
   const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const tidy = (code) => String(code || '').replace(/^\s*\n/, '').replace(/\s+$/, '') + '\n';
 
@@ -278,6 +327,9 @@
 
   function renderLesson(l) {
     current = l;
+    if (viewOf() === 'slides') return renderSlides(l);
+    Slides.unmount();
+    el.content.classList.remove('slides-mode');
     const week = C.weeks.find((w) => w.no === l.week);
     const idx = C.lessons.indexOf(l);
     const prev = C.lessons[idx - 1], next = C.lessons[idx + 1];
@@ -287,6 +339,12 @@
     parts.push(`<header class="lesson-head">
       <div class="crumbs"><span class="badge ${week.kind === '교육' ? 'edu' : 'proj'}">${week.kind}</span>
         ${l.week}주차 · ${escapeHtml(week.title)} <span class="sep">›</span> ${l.period}교시</div>
+      <div class="view-tools">
+        ${role === 'teacher' ? '<span class="badge teacher">🧑‍🏫 교사용</span>' : ''}
+        <span class="spacer"></span>
+        <button class="btn small ghost" data-view="slides" title="PPT 처럼 한 장씩 넘겨 보기">🖼️ 슬라이드로 보기</button>
+        <button class="btn small primary" data-view="present" title="슬라이드를 전체 화면으로 발표 (F)">⛶ 전체 화면</button>
+      </div>
       <h1>${escapeHtml(l.title)}</h1>
       <p class="lead">${l.summary ? l.summary : escapeHtml(l.topics)}</p>
       <div class="refs">📚 OpenCV.org 튜토리얼:
@@ -333,6 +391,7 @@
           <p class="qtext"><b>Q${i + 1}.</b> ${q.q}</p>
           <div class="options">${q.options.map((o, j) => `<button class="opt" data-quiz="${j}"><span class="optno">${'①②③④⑤⑥'[j]}</span> ${o}</button>`).join('')}</div>
           <div class="verdict"></div>
+          <div class="answer-key teacher-only">🔑 정답 ${'①②③④⑤⑥'[q.answer]} — ${q.explain || ''}</div>
           <div class="explain" hidden>${q.explain || ''}</div></div>`).join('')}</section>`);
     }
 
@@ -352,6 +411,34 @@
     setEditor(saved || defaultCode(l), saved ? '이어서 작성' : '기본 예제');
     document.title = `${l.week}주 ${l.period}교시 · ${l.title} | OpenCV-Python 강좌`;
   }
+
+  function renderSlides(l) {
+    el.content.classList.add('slides-mode');
+    el.content.innerHTML = '';
+    Slides.mount(el.content, l, {
+      role,
+      api: {
+        setView,
+        loadCode(code, title, runNow) {
+          setEditor(code, title);
+          store.set('code:' + l.id, editor.getValue());
+          if (runNow) run();
+        },
+      },
+    });
+    const saved = store.get('code:' + l.id, null);
+    setEditor(saved || defaultCode(l), saved ? '이어서 작성' : '기본 예제');
+    document.title = `${l.week}주 ${l.period}교시 · ${l.title} (슬라이드) | OpenCV-Python 강좌`;
+  }
+
+  el.content.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-view]');
+    if (!b) return;
+    cleanHash();
+    store.set('view:' + role, 'slides');
+    route();
+    if (b.dataset.view === 'present') Slides.fullscreen(true);
+  });
 
   /* ----------------------------------------------------- 특별 페이지 --- */
   function renderHome() {
@@ -376,6 +463,7 @@
           <div class="hero-actions">
             <a class="btn primary" href="#w1-0">1주차 0교시부터 시작 →</a>
             <a class="btn ghost" href="#guide">실습 환경 사용법</a>
+            ${role === 'teacher' ? '<a class="btn ghost" href="presenter.html" target="ocv-presenter">🗒 발표자 창 열기</a>' : ''}
           </div>
         </div>
         <div class="hero-stats">
@@ -425,7 +513,24 @@
           입력이 <b>📷 웹캠</b>이나 <b>🎞️ 동영상</b>이면 매 프레임마다, <b>이미지</b>면 한 번(그리고 트랙바를 움직일 때마다) 호출됩니다. 반환한 이미지는 <code>result</code> 창에 나타납니다.
           동영상은 패널의 재생 컨트롤로 일시정지·탐색할 수 있고, 웹캠이 없어도 동영상으로 같은 실습을 할 수 있습니다.</p></div>
         <div class="block">${codeBlockHtml(`import cv2 as cv\n\ndef process(frame):\n    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)\n    edges = cv.Canny(gray, 100, 200)\n    return edges\n`, '예제 · 입력 영상을 실시간으로 엣지 검출')}</div>
-        <div class="block text"><h3>4. 입력 이미지 · 동영상</h3>
+        <div class="block text"><h3>4. 학생용 · 교사용 페이지와 슬라이드 보기</h3>
+          <p>왼쪽 위의 <b>🎓 학생용 / 🧑‍🏫 교사용</b> 전환(또는 <code>student.html</code> · <code>teacher.html</code>)으로 보기 대상을 고릅니다.</p>
+          <ul>
+            <li><b>학생용</b> — 기본은 스크롤 <b>문서 보기</b>. 강좌 제목 아래 <b>🖼️ 슬라이드로 보기</b>로 PPT처럼 한 장씩 넘겨 볼 수 있습니다.</li>
+            <li><b>교사용</b> — 기본은 <b>요약 슬라이드</b>. 아래쪽 <b>교사용 노트</b>(말할 내용 · 발문 · 시간 안배 · 퀴즈 정답), 수업 타이머, 실습 정답 코드 실행 버튼이 추가됩니다. 에디터는 접혀 있어 슬라이드가 크게 보입니다.</li>
+            <li><b>⛶ 전체 화면</b> — 슬라이드만 크게 발표합니다. 예제 코드 슬라이드에서 ▶ 실행을 누르면 오른쪽에 실행 결과가 함께 나타납니다.</li>
+            <li><b>🗒 발표자 창</b>(교사용) — 노트 · 다음 슬라이드 · 타이머가 보이는 창을 따로 엽니다. 프로젝터에는 전체 화면, 교사 모니터에는 발표자 창을 띄우면 두 창이 함께 넘어갑니다.</li>
+          </ul></div>
+        <div class="block table-wrap"><table><thead><tr><th>키</th><th>슬라이드에서 하는 일</th></tr></thead><tbody>
+          <tr><td><kbd>→</kbd> <kbd>Space</kbd> <kbd>PageDown</kbd> / <kbd>←</kbd> <kbd>PageUp</kbd></td><td>다음 / 이전 슬라이드 (전체 화면에서는 슬라이드 클릭으로도 다음)</td></tr>
+          <tr><td><kbd>Home</kbd> / <kbd>End</kbd></td><td>처음 / 마지막 슬라이드</td></tr>
+          <tr><td><kbd>F</kbd> · <kbd>Esc</kbd></td><td>전체 화면 켜기 · 끄기</td></tr>
+          <tr><td><kbd>G</kbd></td><td>슬라이드 목록에서 골라 이동</td></tr>
+          <tr><td><kbd>R</kbd> · <kbd>N</kbd> · <kbd>B</kbd></td><td>(전체 화면) 실행 결과 패널 · 교사용 노트 · 화면 가리기 켜고 끄기</td></tr>
+          <tr><td><kbd>T</kbd></td><td>(교사용) 수업 타이머 시작 · 일시정지</td></tr>
+        </tbody></table></div>
+        <div class="block text"><p>주소 끝에 <code>@번호</code>를 붙이면 특정 슬라이드로 바로 열립니다. 예) <code>teacher.html#w2-5@6</code></p></div>
+        <div class="block text"><h3>5. 입력 이미지 · 동영상</h3>
           <p>OpenCV 공식 튜토리얼의 샘플 이미지가 미리 들어 있어 <code>cv.imread('messi5.jpg')</code>처럼 이름만 쓰면 됩니다.
           샘플 동영상 <code>vtest.avi</code>(보행자), <code>Megamind.avi</code>(애니메이션), <code>cup.mp4</code>(움직이는 컵)는 <code>cv.VideoCapture('vtest.avi')</code> 로 엽니다.
           <b>⬆ 업로드</b>로 내 사진·동영상을 추가하거나, 웹캠/동영상에서 <b>📸 스냅샷</b>을 찍어 <code>webcam.png</code>·<code>frame.png</code> 로 쓸 수 있습니다.
@@ -463,7 +568,13 @@
 
   /* -------------------------------------------------------------- 라우팅 --- */
   function route() {
-    const key = decodeURIComponent(location.hash.slice(1)) || store.get('last', 'home');
+    const raw = decodeURIComponent(location.hash.slice(1)) || store.get('last', 'home');
+    const [key, slideNo] = raw.split('@');           // #w1-1@5 → 1주 1교시 슬라이드 5번
+    if (slideNo && C.byId[key]) {
+      try { localStorage.setItem('ocv:slide:' + key, String(Math.max(0, Number(slideNo) - 1))); } catch (_) {}
+      store.set('view:' + role, 'slides');
+    }
+    if (!C.byId[key]) { Slides.unmount(); el.content.classList.remove('slides-mode'); }
     if (C.byId[key]) renderLesson(C.byId[key]);
     else if (key === 'guide') renderGuide();
     else if (key === 'images') renderImages();
