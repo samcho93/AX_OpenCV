@@ -21,6 +21,21 @@ OpenCV.org 공식 Python 튜토리얼을 기반으로 한 **초보자용 5주 ·
 
 > `index.html` 을 파일로 직접 열어도 대부분 동작하지만, 웹캠 권한 때문에 로컬 서버 사용을 권장합니다.
 
+## 🚀 응용 예제 (실전 데모)
+
+강좌 왼쪽 메뉴의 **🚀 응용 예제**(`index.html#apps`)에서 OpenCV 가 현실에서 쓰이는 모습을 **코드 없이 실행**해 볼 수 있습니다.
+각 데모는 현장 활용 사례 · 동작 원리 · 사용한 OpenCV 기능 설명과 **▶ 데모 실행** 버튼, 입력(이미지 · 동영상 · 웹캠) 바꾸기, 트랙바 조절을 제공합니다.
+
+| 분류 | 데모 |
+|---|---|
+| 🤖 딥러닝 | YOLO(YOLOX) 객체 인식 · YuNet 얼굴 검출/모자이크 · PP-HumanSeg 사람 분할/가상 배경 · PP-OCR 글자 영역 검출 |
+| 🏙️ 실무 영상 분석 | 택배 송장 QR · 바코드 인식 · HOG 보행자 검출 · 침입 감지(MOG2) · ArUco 마커 AR |
+| 🏭 머신비전 외관검사 | PCB 결함 · 금속 표면 스크래치 · 와셔 치수 측정 · 블리스터 알약 누락 · 병 충진/캡 검사 |
+
+- 모델: `models/` — YOLOX(Megvii, Apache-2.0), YuNet(MIT), PP-HumanSeg · PP-OCRv3(OpenCV Zoo, Apache-2.0)
+- 이미지: `images/apps/` — street.png · dog416.png(opencv_extra), imageTextR.png(OpenCV samples), 나머지는 `tools/gen_app_images*.py` 로 만든 교육용 합성 이미지
+- 데모 추가 방법: `docs/APPS_GUIDE.md`, 검증: `python tools/test_apps.py`
+
 ## 🧩 노드 편집기 (`nodes.html`)
 
 코드를 쓰지 않고 **블록(노드)을 연결해** OpenCV 프로그램을 만드는 별도 페이지입니다.

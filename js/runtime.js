@@ -317,6 +317,7 @@
 
   function mimeOf(name) { return /\.png$/i.test(name) ? 'image/png' : 'image/jpeg'; }
 
+  const loadedAssets = new Set();
   function addImageFile(name, bytes, desc, select) {
     if (pyodide) pyodide.FS.writeFile(`${WORKDIR}/${name}`, bytes);
     else pendingFiles.push([name, bytes]);
@@ -777,6 +778,47 @@
     isCameraSource: () => isCamera(), isVideoSource: () => isVideo(),
     images,
     get pyodide() { return pyodide; },
+    /** 서버의 파일(모델 · 추가 이미지)을 받아 가상 폴더에 같은 이름으로 넣음. 이미지는 입력 소스 목록에도 추가 */
+    async loadAsset(url, name, { desc = '', onProgress } = {}) {
+      const isImage = /\.(png|jpe?g|bmp|webp)$/i.test(name);
+      if (loadedAssets.has(name)) return true;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`${name} 을(를) 불러오지 못했습니다 (HTTP ${res.status})`);
+      let bytes;
+      const total = Number(res.headers.get('content-length')) || 0;
+      if (onProgress && res.body && total) {
+        const reader = res.body.getReader();
+        const chunks = [];
+        let got = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          got += value.length;
+          onProgress(got, total);
+        }
+        bytes = new Uint8Array(got);
+        let o = 0;
+        for (const c of chunks) { bytes.set(c, o); o += c.length; }
+      } else {
+        bytes = new Uint8Array(await res.arrayBuffer());
+      }
+      if (isImage) addImageFile(name, bytes, desc, false);
+      else if (pyodide) pyodide.FS.writeFile(`${WORKDIR}/${name}`, bytes);
+      else pendingFiles.push([name, bytes]);
+      loadedAssets.add(name);
+      return true;
+    },
+    /** 입력 소스 바꾸기: 이미지 이름 · 'video:vtest.mp4' · 'camera' */
+    setSource(value) {
+      const v = value === 'camera' ? CAMERA : value;
+      if (!Array.from(el.source.options).some((o) => o.value === v)) return false;
+      if (el.source.value === v) return true;
+      el.source.value = v;
+      el.source.dispatchEvent(new Event('change'));
+      return true;
+    },
+    get source() { return el.source.value === CAMERA ? 'camera' : el.source.value; },
   };
 
   init();

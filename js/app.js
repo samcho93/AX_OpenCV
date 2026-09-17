@@ -176,6 +176,15 @@
     html.push(`<a class="nav-item home" href="#guide" data-page="guide">🧭 실습 환경 사용법</a>`);
     html.push(`<a class="nav-item home" href="#images" data-page="images">🖼️ 샘플 이미지 · 동영상</a>`);
     html.push(`<a class="nav-item home nodes-link" href="nodes.html" target="ocv-nodes">🧩 노드 편집기 <span class="muted" style="font-weight:400;font-size:11.5px">(새 창)</span></a>`);
+    if (window.APPS && APPS.list.length) {
+      html.push(`<details class="week apps-nav" data-week="apps" ${openWeeks.has('apps') ? 'open' : ''}>
+        <summary><span class="week-no">🚀</span><span class="week-title">응용 예제 (실전 데모)</span><span class="badge app">${APPS.list.length}</span></summary>
+        <ol class="lessons">
+          <li><a class="nav-item nav-lesson" href="#apps" data-page="apps" data-search="응용 예제 갤러리"><span class="period">전체</span><span class="ltitle">데모 갤러리</span></a></li>
+          ${APPS.categories.map((c) => APPS.list.filter((a) => a.cat === c.id).map((a) => `<li><a class="nav-item nav-lesson" href="#app-${a.id}" data-page="app-${a.id}"
+            data-search="${escapeHtml(`${a.title} ${a.subtitle} ${(a.tech || []).join(' ')} ${c.title}`.toLowerCase())}"><span class="period">${a.icon}</span><span class="ltitle">${escapeHtml(a.title)}</span></a></li>`).join('')).join('')}
+        </ol></details>`);
+    }
     for (const w of C.weeks) {
       const ls = C.lessons.filter((l) => l.week === w.no);
       html.push(`<details class="week" data-week="${w.no}" ${openWeeks.has(w.no) ? 'open' : ''}>
@@ -189,7 +198,7 @@
     }
     el.nav.innerHTML = html.join('');
     $$('details.week', el.nav).forEach((d) => d.addEventListener('toggle', () => {
-      store.set('openWeeks', $$('details.week[open]', el.nav).map((x) => Number(x.dataset.week)));
+      store.set('openWeeks', $$('details.week[open]', el.nav).map((x) => (isNaN(x.dataset.week) ? x.dataset.week : Number(x.dataset.week))));
     }));
   }
 
@@ -198,7 +207,7 @@
     $$('details.week', el.nav).forEach((d) => {
       let any = false;
       $$('a.nav-lesson', d).forEach((a) => {
-        const hit = !q || a.dataset.search.includes(q) || searchLessonBody(a.dataset.lesson, q);
+        const hit = !q || a.dataset.search.includes(q) || (a.dataset.lesson && searchLessonBody(a.dataset.lesson, q));
         a.parentElement.hidden = !hit;
         any = any || hit;
       });
@@ -497,6 +506,7 @@
           <div class="hero-actions">
             <a class="btn primary" href="#w1-0">1주차 0교시부터 시작 →</a>
             <a class="btn ghost" href="#guide">실습 환경 사용법</a>
+            ${window.APPS && APPS.list.length ? `<a class="btn ghost" href="#apps">🚀 응용 예제 ${APPS.list.length}종</a>` : ''}
             ${role === 'teacher' ? '<a class="btn ghost" href="presenter.html" target="ocv-presenter">🗒 발표자 창 열기</a>' : ''}
           </div>
         </div>
@@ -618,8 +628,14 @@
     if (C.byId[key]) renderLesson(C.byId[key]);
     else if (key === 'guide') renderGuide();
     else if (key === 'images') renderImages();
+    else if (key === 'apps' && window.AppsView) AppsView.gallery(el.content);
+    else if (key.startsWith('app-') && window.AppsView && APPS.byId[key.slice(4)]) AppsView.detail(el.content, APPS.byId[key.slice(4)]);
     else renderHome();
-    highlightNav(C.byId[key] || ['guide', 'images'].includes(key) ? key : 'home');
+    const isApp = key === 'apps' || (key.startsWith('app-') && window.APPS && APPS.byId[key.slice(4)]);
+    if (document.body.classList.contains('app-page') && !isApp) Runtime.stopLive();
+    document.body.classList.toggle('app-page', !!isApp);
+    if (isApp) { current = null; document.title = key === 'apps' ? '🚀 응용 예제 | OpenCV-Python 강좌' : `${APPS.byId[key.slice(4)].title} | 응용 예제`; }
+    highlightNav(C.byId[key] || ['guide', 'images'].includes(key) || isApp ? key : 'home');
     store.set('last', key);
   }
   window.addEventListener('hashchange', route);
