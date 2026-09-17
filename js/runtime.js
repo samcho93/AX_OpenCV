@@ -27,6 +27,8 @@
   const live = { on: false, raf: 0, busy: false, frames: 0, t0: 0, ms: 0 };
   let currentNs = null;
   let onLiveChange = () => {};
+  const afterHooks = [];
+  const fireAfter = (kind) => { for (const fn of afterHooks) { try { fn(kind); } catch (e) { console.error(e); } } };
 
   /* ------------------------------------------------------------ 콘솔 --- */
   function log(text, cls) {
@@ -236,6 +238,7 @@
     try {
       py.onMouse(name, event, x, y, flags);
       if (live.on) { if (isMedia()) live.dirty = true; else runProcessOnce(); }
+      fireAfter('callback');
     } catch (e) {
       reportError(e, '마우스 콜백');
       py.disableMouse(name);
@@ -267,6 +270,7 @@
           try {
             py.onTrackbar(win, name, Number(input.value));
             if (live.on) { if (isMedia()) live.dirty = true; else runProcessOnce(); }
+            fireAfter('callback');
           } catch (e) {
             reportError(e, '트랙바 콜백');
           }
@@ -565,6 +569,7 @@
         py.processFile(el.source.value);
       }
       live.ms = performance.now() - t;
+      fireAfter('frame');
       return true;
     } catch (e) {
       const f = reportError(e, 'process(frame)');
@@ -689,7 +694,7 @@
     running = true;
     stopLive();
     clearWindows();
-    if (!opts.keepConsole) log(`▶ 실행 (${new Date().toLocaleTimeString()})`, 'run');
+    if (!opts.keepConsole && !opts.quiet) log(`▶ 실행 (${new Date().toLocaleTimeString()})`, 'run');
     setStatus('busy', '실행 중…');
     await new Promise((r) => setTimeout(r, 20)); // 화면 갱신 기회
     code = String(code ?? '');
@@ -708,6 +713,7 @@
       py.beginRun(ns);
       pyodide.runPython(code, { globals: ns, filename: 'main.py' });
       py.endRun();
+      fireAfter('run');
       if (py.hasProcess(ns)) startLive();
     } catch (e) {
       const f = reportError(e);
@@ -759,6 +765,16 @@
   window.Runtime = {
     ready, run, stopLive, clearConsole, log, isLive: () => live.on,
     onLiveChange: (fn) => (onLiveChange = fn),
+    /** 실행 후 · 매 프레임 후 · 트랙바/마우스 콜백 후 호출 (노드 편집기 미리보기용) */
+    onAfter: (fn) => afterHooks.push(fn),
+    /** 브리지(Python)의 함수를 이름으로 호출 */
+    callPy: (name, ...args) => {
+      if (!pyodide) return undefined;
+      const fn = pyodide.globals.get(name);
+      try { return fn(...args); } finally { if (fn && fn.destroy) fn.destroy(); }
+    },
+    formatError,
+    isCameraSource: () => isCamera(), isVideoSource: () => isVideo(),
     images,
     get pyodide() { return pyodide; },
   };

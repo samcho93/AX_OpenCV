@@ -104,6 +104,9 @@ code, kbd, pre { font-family: var(--mono); }
 .btn.small { padding: 4px 10px; font-size: 12.5px; }
 .btn.tiny { padding: 2px 8px; font-size: 11.5px; border-radius: 6px; }
 .btn.live { border-color: var(--danger); color: var(--danger); }
+.btn.nodes-btn { background: #ca8a04; border-color: #ca8a04; color: #fff; }
+.btn.nodes-btn:hover:not(:disabled) { filter: brightness(1.08); color: #fff; border-color: #ca8a04; }
+.sl-codebar .sl-btn.nodes, .sl-btn.nodes { background: #ca8a04; border-color: #ca8a04; color: #fff; }
 .icon-btn {
   border: 0; background: transparent; color: var(--muted); cursor: pointer; border-radius: 6px; font-size: 16px;
   width: 30px; height: 30px; display: inline-grid; place-items: center;

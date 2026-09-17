@@ -175,6 +175,7 @@
     html.push(`<a class="nav-item home" href="#home" data-page="home">🏠 과정 개요 · 시간표</a>`);
     html.push(`<a class="nav-item home" href="#guide" data-page="guide">🧭 실습 환경 사용법</a>`);
     html.push(`<a class="nav-item home" href="#images" data-page="images">🖼️ 샘플 이미지 · 동영상</a>`);
+    html.push(`<a class="nav-item home nodes-link" href="nodes.html" target="ocv-nodes">🧩 노드 편집기 <span class="muted" style="font-weight:400;font-size:11.5px">(새 창)</span></a>`);
     for (const w of C.weeks) {
       const ls = C.lessons.filter((l) => l.week === w.no);
       html.push(`<details class="week" data-week="${w.no}" ${openWeeks.has(w.no) ? 'open' : ''}>
@@ -232,7 +233,8 @@
       <div class="codebar"><span class="codetitle">${escapeHtml(title || '코드')}</span><span class="spacer"></span>
         <button class="btn tiny ghost" data-copy="${id}">⧉ 복사</button>
         ${opts.norun ? '<span class="muted tiny">읽기 전용 예시</span>' : `<button class="btn tiny ghost" data-load="${id}" title="에디터로 불러오기">✎ 에디터로</button>
-        <button class="btn tiny primary" data-runcode="${id}" title="에디터로 불러와 바로 실행">▶ 실행</button>`}
+        <button class="btn tiny primary" data-runcode="${id}" title="에디터로 불러와 바로 실행">▶ 실행</button>
+        <button class="btn tiny nodes-btn" data-nodes="${id}" title="이 예제를 노드(블록) 프로그램으로 바꿔 노드 편집기 창에서 열기">🧩 노드</button>`}
       </div>
       <pre class="cm-s-material-darker"><code data-code="${id}"></code></pre></div>`;
   }
@@ -254,6 +256,9 @@
     if (!t) return;
     if (t.dataset.copy) {
       try { await navigator.clipboard.writeText(codeStore[t.dataset.copy]); flash(t, '✓ 복사됨'); } catch (_) {}
+    } else if (t.dataset.nodes) {
+      const title = t.closest('.codeblock, .practice')?.querySelector('.codetitle, .ptitle')?.textContent || '예제';
+      openInNodes(codeStore[t.dataset.nodes], title);
     } else if (t.dataset.load || t.dataset.runcode) {
       const id = t.dataset.load || t.dataset.runcode;
       const title = t.closest('.codeblock, .practice')?.querySelector('.codetitle, .ptitle')?.textContent || '';
@@ -276,6 +281,34 @@
       store.set(key, [...s]);
     }
   });
+
+  /* --------------------------------------------- 노드 편집기와 주고받기 --- */
+  /** 예제 코드를 노드 편집기 창(별도 창)에서 노드로 열기 */
+  function openInNodes(code, title) {
+    const l = current;
+    store.set('nodes:inbox', {
+      code, title, ts: Date.now(),
+      lesson: l ? l.id : null, label: l ? `${l.week}주차 ${l.period}교시 · ${title}` : title,
+    });
+    const w = window.open('nodes.html#inbox', 'ocv-nodes');
+    if (w) w.focus(); else location.href = 'nodes.html#inbox';
+  }
+
+  // 노드 편집기에서 보낸 코드를 에디터로 받기
+  function consumeCourseInbox() {
+    const msg = store.get('course:inbox', null);
+    if (!msg || !msg.code || Date.now() - (msg.ts || 0) > 120000) return;
+    store.del('course:inbox');
+    if (msg.lesson && C.byId[msg.lesson] && (!current || current.id !== msg.lesson)) location.hash = msg.lesson;
+    setTimeout(() => {
+      store.set('editorFolded:' + role, false);
+      applyFold();
+      setEditor(msg.code, `🧩 노드에서 가져옴 · ${msg.title || ''}`);
+      if (current) store.set('code:' + current.id, editor.getValue());
+      window.focus();
+    }, 50);
+  }
+  window.addEventListener('storage', (e) => { if (e.key === 'ocv:course:inbox' && e.newValue) consumeCourseInbox(); });
 
   function answerQuiz(btn) {
     const q = btn.closest('.quiz-q');
@@ -376,6 +409,7 @@
             <div class="pdesc">${p.desc || ''}</div>
             <div class="pactions">
               <button class="btn small primary" data-load="${starterId}">✎ 시작 코드 불러오기</button>
+              <button class="btn small nodes-btn" data-nodes="${starterId}" title="시작 코드를 노드 편집기에서 블록으로 열기">🧩 노드로 열기</button>
               ${p.hint ? `<button class="btn small ghost" data-toggle="${hid}">💡 힌트</button>` : ''}
               ${p.solution ? `<button class="btn small ghost" data-toggle="${sid}">🔑 정답 코드</button>` : ''}
             </div>
@@ -530,6 +564,12 @@
           <tr><td><kbd>T</kbd></td><td>(교사용) 수업 타이머 시작 · 일시정지</td></tr>
         </tbody></table></div>
         <div class="block text"><p>주소 끝에 <code>@번호</code>를 붙이면 특정 슬라이드로 바로 열립니다. 예) <code>teacher.html#w2-5@6</code></p></div>
+        <div class="block text"><h3>6. 🧩 노드 편집기</h3>
+          <p>코드 대신 <b>블록(노드)을 선으로 연결</b>해 같은 프로그램을 만들 수 있습니다. 예제 코드 옆 <b>🧩 노드</b> 버튼을 누르면 그 예제가 블록으로 바뀌어 노드 편집기 창에 열립니다.
+          왼쪽 목록의 <a href="nodes.html" target="ocv-nodes">🧩 노드 편집기</a>로 빈 화면에서 시작할 수도 있어요.</p>
+          <ul><li>노드의 오른쪽 ●을 끌어 다른 노드의 왼쪽 ●에 놓으면 연결 → 자동 실행 → 노드마다 결과 썸네일과 오른쪽 프리뷰</li>
+          <li><b>📷 입력 소스</b> 블록에서 시작하면 동영상 · 웹캠의 매 프레임에 실행됩니다 (<code>def process(frame)</code>와 같음)</li>
+          <li>노드 편집기의 <b>Python 코드</b> 탭에서 만들어진 코드를 보고, <b>📘 강좌 에디터로 보내기</b>로 이 페이지의 에디터에 가져올 수 있습니다.</li></ul></div>
         <div class="block text"><h3>5. 입력 이미지 · 동영상</h3>
           <p>OpenCV 공식 튜토리얼의 샘플 이미지가 미리 들어 있어 <code>cv.imread('messi5.jpg')</code>처럼 이름만 쓰면 됩니다.
           샘플 동영상 <code>vtest.avi</code>(보행자), <code>Megamind.avi</code>(애니메이션), <code>cup.mp4</code>(움직이는 컵)는 <code>cv.VideoCapture('vtest.avi')</code> 로 엽니다.
@@ -622,10 +662,11 @@
 
   $('#clearConsoleBtn').addEventListener('click', () => Runtime.clearConsole());
 
-  window.App = { markErrorLine, run, editor, route };
+  window.App = { markErrorLine, run, editor, route, openInNodes };
 
   renderNav();
   renderProgress();
   initResizers();
   route();
+  consumeCourseInbox();
 })();

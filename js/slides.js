@@ -169,7 +169,8 @@
           ${s.points.length ? `<ul class="sl-points small">${s.points.map((p) => `<li>${p}</li>`).join('')}</ul>` : ''}
           <div class="sl-codebox"><div class="sl-codebar"><span>${esc(b.title || '예제 코드')}</span><span class="spacer"></span>
             ${b.norun ? '<span class="sl-muted">읽기 전용 (데스크톱 코드)</span>' : `<button class="sl-btn" data-act="load-example" data-i="${s.example}">✎ 에디터로</button>
-            <button class="sl-btn primary" data-act="run-example" data-i="${s.example}">▶ 실행</button>`}</div>
+            <button class="sl-btn primary" data-act="run-example" data-i="${s.example}">▶ 실행</button>
+            <button class="sl-btn nodes" data-act="nodes-example" data-i="${s.example}" title="노드 편집기 창에서 블록으로 열기">🧩 노드</button>`}</div>
             <pre class="cm-s-material-darker"><code data-src="example" data-i="${s.example}"></code></pre></div>
           ${callouts}${foot}</div>`;
       }
@@ -370,6 +371,9 @@
       else if (act === 'load-example' || act === 'run-example') {
         const b = codeBlocks(l)[Number(t.dataset.i)];
         this.api.loadCode(b.code, b.title, act === 'run-example');
+      } else if (act === 'nodes-example') {
+        const b = codeBlocks(l)[Number(t.dataset.i)];
+        if (window.App && App.openInNodes) App.openInNodes(b.code, b.title || '예제');
       } else if (act === 'load-starter') {
         const p = l.practice[Number(t.dataset.i)];
         this.api.loadCode(p.starter || '', p.title, false);

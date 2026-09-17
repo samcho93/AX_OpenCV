@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenCV 노드 편집기</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/runmode/runmode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.29.5/full/pyodide.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/nodes.css">
+</head>
+<body class="nodes-page">
+  <div id="app" class="nlayout">
+    <!-- ===================== 위쪽 도구 막대 ===================== -->
+    <header class="ntop">
+      <a class="nbrand" href="index.html" title="강좌 홈">
+        <span class="nbrand-icon">🧩</span>
+        <span><b>OpenCV 노드 편집기</b><small>블록을 연결해 영상처리 프로그램 만들기</small></span>
+      </a>
+      <input id="graphTitle" class="ntitle" placeholder="프로그램 이름" spellcheck="false">
+      <div class="ntools">
+        <button id="runBtn" class="btn primary" disabled title="실행 (Ctrl+Enter)">▶ 실행</button>
+        <button id="stopBtn" class="btn ghost" disabled title="실시간 처리 정지">■ 정지</button>
+        <label class="check ntool-check" title="노드를 바꾸면 자동으로 다시 실행"><input id="autoRun" type="checkbox" checked> 자동 실행</label>
+        <span class="nsep"></span>
+        <button id="examplesBtn" class="btn ghost" title="강좌 예제를 노드로 불러오기">📚 예제 불러오기</button>
+        <button id="pasteBtn" class="btn ghost" title="Python 코드를 노드로 변환">🐍 코드 → 노드</button>
+        <button id="layoutBtn" class="btn ghost" title="노드 자동 정렬">⇆ 정렬</button>
+        <button id="undoBtn" class="btn ghost" title="되돌리기 (Ctrl+Z)">↶</button>
+        <button id="redoBtn" class="btn ghost" title="다시 하기 (Ctrl+Y)">↷</button>
+        <button id="newBtn" class="btn ghost" title="새 프로그램">＋ 새로</button>
+        <button id="saveBtn" class="btn ghost" title="그래프를 JSON 파일로 저장">💾</button>
+        <label class="btn ghost" title="JSON 파일 열기">📂<input id="openInput" type="file" accept=".json,application/json" hidden></label>
+      </div>
+      <span class="spacer"></span>
+      <span id="pyStatus" class="status loading"><span class="pulse"></span><span id="pyStatusText">Python 준비 중…</span></span>
+      <button id="toCourseBtn" class="btn small" title="강좌 페이지로 전환">📘 강좌로</button>
+    </header>
+
+    <!-- ===================== 왼쪽: 팔레트 ===================== -->
+    <aside class="npalette pane">
+      <div class="npal-head">
+        <input id="palSearch" type="search" class="nav-search" placeholder="블록 검색 (예: Canny, 블러)">
+        <div class="npal-hint muted">클릭하면 선택한 노드 뒤에 연결되어 추가 · 끌어서 원하는 위치에 놓기</div>
+      </div>
+      <div id="palette" class="npal-list"></div>
+    </aside>
+
+    <!-- ===================== 가운데: 편집 화면 ===================== -->
+    <main class="nwrap" id="editorWrap"></main>
+
+    <!-- ===================== 오른쪽: 상태 · 프리뷰 ===================== -->
+    <aside class="nright pane">
+      <section class="nsec">
+        <div class="source-bar">
+          <label class="field"><span>입력 소스</span><select id="sourceSelect"></select></label>
+          <div class="source-actions">
+            <button id="camBtn" class="btn small">📷 웹캠 켜기</button>
+            <button id="snapBtn" class="btn small ghost" disabled title="현재 화면을 이미지로 저장">📸 스냅샷</button>
+            <label class="btn small ghost upload" title="내 이미지나 동영상 추가">⬆ 업로드<input id="uploadInput" type="file" accept="image/*,video/*" multiple hidden></label>
+            <label class="check"><input id="mirrorChk" type="checkbox"> 좌우반전</label>
+          </div>
+          <div id="camWrap" class="cam-wrap hidden">
+            <video id="camVideo" autoplay playsinline muted></video>
+            <video id="fileVideo" class="hidden" playsinline muted loop controls preload="auto"></video>
+            <div class="cam-meta"><span id="camInfo">-</span><span id="liveInfo" class="live-info"></span></div>
+          </div>
+          <div id="sourcePreview" class="source-preview"></div>
+        </div>
+      </section>
+
+      <section class="nsec npreview">
+        <div class="nsec-head"><span>🔍 프리뷰</span><span id="previewName" class="muted"></span><span class="spacer"></span>
+          <span id="previewOuts" class="nouts"></span></div>
+        <div class="npreview-box"><canvas id="previewCanvas" width="1" height="1"></canvas>
+          <div id="previewEmpty" class="npreview-empty muted">노드를 선택하면 그 노드의 결과가 여기에 보입니다.</div></div>
+        <div id="previewInfo" class="npreview-info"></div>
+        <div id="trackbars" class="trackbars hidden"></div>
+      </section>
+
+      <section class="nsec ntabs-sec">
+        <div class="ntabs">
+          <button data-tab="status" class="active">상태</button>
+          <button data-tab="inspector">속성</button>
+          <button data-tab="windows">창</button>
+          <button data-tab="console">콘솔</button>
+          <button data-tab="code">Python 코드</button>
+        </div>
+        <div class="ntab-panes">
+          <div class="ntab-pane active" data-pane="status" id="statusPane"></div>
+          <div class="ntab-pane" data-pane="inspector" id="inspector"></div>
+          <div class="ntab-pane" data-pane="windows"><div id="windows" class="windows"><div class="empty-out"><p class="muted">cv.imshow() 창이 여기에 표시됩니다.</p></div></div></div>
+          <div class="ntab-pane" data-pane="console">
+            <div class="console-bar"><span>콘솔</span><span class="spacer"></span><button id="clearConsoleBtn" class="icon-btn small" title="지우기">⌫</button></div>
+            <pre id="console" class="console"></pre>
+          </div>
+          <div class="ntab-pane" data-pane="code">
+            <div class="ncode-bar">
+              <button id="copyCodeBtn" class="btn tiny ghost">⧉ 복사</button>
+              <button id="sendCodeBtn" class="btn tiny ghost" title="강좌 페이지의 코드 에디터로 보내기">📘 강좌 에디터로 보내기</button>
+              <button id="downloadPyBtn" class="btn tiny ghost">⬇ .py 저장</button>
+            </div>
+            <pre class="cm-s-material-darker ncode"><code id="codeView"></code></pre>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- 예제 불러오기 / 코드 붙여넣기 대화상자 -->
+  <div id="modal" class="nmodal hidden">
+    <div class="nmodal-box">
+      <div class="nmodal-head"><b id="modalTitle"></b><span class="spacer"></span><button class="icon-btn" data-close>✕</button></div>
+      <div id="modalBody" class="nmodal-body"></div>
+    </div>
+  </div>
+  <div id="toast" class="ntoast hidden"></div>
+  <div id="lightbox" class="lightbox hidden"><canvas id="lightboxCanvas"></canvas><div class="lightbox-cap" id="lightboxCap"></div></div>
+
+  <script src="js/images-data.js"></script>
+  <script src="js/course.js"></script>
+  <script src="lessons/week1.js"></script>
+  <script src="lessons/week2.js"></script>
+  <script src="lessons/week3.js"></script>
+  <script src="lessons/week4.js"></script>
+  <script src="lessons/week5.js"></script>
+  <script src="js/nodes/catalog.js"></script>
+  <script src="js/nodes/graph.js"></script>
+  <script src="js/nodes/converter.js"></script>
+  <script src="js/nodes/editor.js"></script>
+  <script src="js/webcv-bridge.js"></script>
+  <script src="js/runtime.js"></script>
+  <script src="js/nodes/app.js"></script>
+</body>
+</html>

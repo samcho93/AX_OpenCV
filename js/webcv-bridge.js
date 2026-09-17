@@ -379,10 +379,95 @@ def _patch_matplotlib():
     plt._webcv_patched = True
 
 
+# --------------------------------------------- 노드 편집기: 노드별 값 미리보기 ----
+_NODE_VALUES = {}
+
+
+def _pv(nid, *vals):
+    _NODE_VALUES[nid] = vals
+
+
+def _as_image(v):
+    if isinstance(v, cv2.UMat):
+        v = v.get()
+    if not isinstance(v, np.ndarray) or v.size == 0 or v.dtype == object:
+        return None
+    a = v
+    if a.ndim == 3 and a.shape[2] == 1:
+        a = a[:, :, 0]
+    if a.ndim == 2 and min(a.shape) >= 2:
+        pass
+    elif a.ndim == 3 and a.shape[2] in (3, 4) and min(a.shape[:2]) >= 2:
+        pass
+    else:
+        return None
+    if a.dtype == np.bool_:
+        a = a.astype(np.uint8) * 255
+    elif a.dtype.kind in "iu" and a.dtype != np.uint8:
+        a = np.clip(a, 0, 255).astype(np.uint8)
+    elif a.dtype.kind == "f":
+        mx = float(np.nanmax(a)) if a.size else 0.0
+        a = np.clip(np.nan_to_num(a) * (255.0 if mx <= 1.0 else 1.0), 0, 255).astype(np.uint8)
+    return a
+
+
+def _node_thumb(nid, idx, maxw, maxh):
+    vals = _NODE_VALUES.get(str(nid))
+    if not vals or int(idx) >= len(vals):
+        return None
+    a = _as_image(vals[int(idx)])
+    if a is None:
+        return None
+    h, w = a.shape[:2]
+    s = min(float(maxw) / w, float(maxh) / h, 1.0)
+    if s < 1.0:
+        a = cv2.resize(a, (max(1, int(w * s)), max(1, int(h * s))), interpolation=cv2.INTER_AREA)
+    rgba, _, _ = _prepare(a)
+    return rgba
+
+
+def _describe(v):
+    try:
+        if isinstance(v, np.ndarray):
+            txt = "ndarray %s %s" % (v.dtype, tuple(v.shape))
+            if v.size and v.dtype.kind in "biuf" and v.size <= 12:
+                txt += " = " + np.array2string(v.ravel(), precision=3, separator=", ")
+            elif v.size and v.dtype.kind in "biuf":
+                txt += "  (min %s · max %s)" % (np.round(float(v.min()), 3), np.round(float(v.max()), 3))
+            return txt
+        if isinstance(v, (list, tuple)):
+            kind = "list" if isinstance(v, list) else "tuple"
+            inner = ""
+            if v and all(isinstance(x, np.ndarray) for x in v[:3]):
+                inner = " · 첫 원소 ndarray %s" % (tuple(v[0].shape),)
+            r = repr(v)
+            return "%s 길이 %d%s%s" % (kind, len(v), inner, ("  " + r[:80] + ("…" if len(r) > 80 else "")) if not inner else "")
+        if callable(v):
+            return "함수 %s" % getattr(v, "__name__", type(v).__name__)
+        r = repr(v)
+        return "%s = %s" % (type(v).__name__, r[:120] + ("…" if len(r) > 120 else ""))
+    except Exception as e:
+        return type(v).__name__
+
+
+def _node_info(nid):
+    import json as _json
+    vals = _NODE_VALUES.get(str(nid))
+    if vals is None:
+        return "null"
+    return _json.dumps([{"text": _describe(v), "image": _as_image(v) is not None} for v in vals], ensure_ascii=False)
+
+
+def _node_ids():
+    import json as _json
+    return _json.dumps(list(_NODE_VALUES.keys()))
+
+
 # ------------------------------------------------------ 실행 준비/정리 ----
 def _begin_run(ns):
     S.reset()
     S.ns = ns
+    _NODE_VALUES.clear()
 
 
 def _end_run():
@@ -468,6 +553,7 @@ webcv.get_input = _get_input
 webcv.source_name = lambda: str(HOST.sourceName())
 webcv.is_camera = lambda: bool(HOST.isCameraSource())
 webcv.is_video = lambda: bool(HOST.isVideoSource())
+webcv._pv = _pv
 sys.modules["webcv"] = webcv
 
 print("OpenCV", cv2.__version__, "| NumPy", np.__version__, "| Python", sys.version.split()[0])
