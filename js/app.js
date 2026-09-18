@@ -778,6 +778,39 @@
       store.set('sizes', sizes);
     };
     $('.con-gutter').addEventListener('dblclick', () => setConsole(0));
+
+    // 실행 결과 창 너비: 결과 창 어디서나 마우스 휠 ↑ 넓게 / ↓ 좁게, 휠 버튼 클릭 = 원래 크기
+    // (결과 목록 · 콘솔 스크롤은 Shift + 휠)
+    const out = $('#output');
+    const outMax = () => Math.max(300, window.innerWidth * 0.6);
+    const setOut = (v) => {
+      if (v) { v = Math.round(Math.max(300, Math.min(outMax(), v))); root.style.setProperty('--out-w', v + 'px'); sizes['out-w'] = v; }
+      else { root.style.removeProperty('--out-w'); delete sizes['out-w']; }
+      store.set('sizes', sizes);
+      editor.refresh();
+      if (window.Slides && Slides.active) Slides.active.fit();
+    };
+    out.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey || window.matchMedia('(max-width: 860px)').matches) return;
+      if (e.target.closest('select, input[type="range"]')) return;
+      e.preventDefault();
+      if (e.shiftKey) {
+        // Shift + 휠: 커서 아래의 스크롤 영역을 위아래로
+        let el = e.target;
+        while (el && el !== out && !(el.scrollHeight > el.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(el).overflowY))) el = el.parentElement;
+        if (el) el.scrollTop += e.deltaY || e.deltaX;
+        return;
+      }
+      const d = e.deltaY || e.deltaX;
+      if (!d) return;
+      setOut(out.getBoundingClientRect().width + (d < 0 ? 40 : -40));
+    }, { passive: false });
+    out.addEventListener('mousedown', (e) => {
+      if (e.button !== 1) return;
+      e.preventDefault();          // 자동 스크롤 막기
+      setOut(0);
+    });
+    out.addEventListener('auxclick', (e) => { if (e.button === 1) e.preventDefault(); });
     $('#growConsoleBtn').addEventListener('click', () => {
       const big = Math.round($('#output').getBoundingClientRect().height * 0.6);
       const cur = $('.console-wrap').getBoundingClientRect().height;
