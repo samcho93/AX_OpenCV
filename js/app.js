@@ -682,11 +682,14 @@
           let v;
           if (kind === 'nav') v = Math.max(200, Math.min(420, ev.clientX));
           else if (kind === 'out') v = Math.max(300, Math.min(window.innerWidth * 0.6, window.innerWidth - ev.clientX));
-          else {
+          else if (kind === 'console') {
+            const r = $('#output').getBoundingClientRect();
+            v = Math.max(60, Math.min(r.height - 120, r.bottom - ev.clientY));
+          } else {
             const r = $('#center').getBoundingClientRect();
             v = Math.max(120, Math.min(r.height - 120, r.bottom - ev.clientY));
           }
-          const name = kind === 'nav' ? 'nav-w' : kind === 'out' ? 'out-w' : 'editor-h';
+          const name = { nav: 'nav-w', out: 'out-w', console: 'console-h' }[kind] || 'editor-h';
           root.style.setProperty('--' + name, v + 'px');
           sizes[name] = Math.round(v);
           editor.refresh();
@@ -700,6 +703,18 @@
         g.addEventListener('pointermove', move);
         g.addEventListener('pointerup', up, { once: true });
       });
+    });
+    // 콘솔 높이: 더블클릭으로 기본값, ⬍ 버튼으로 크게(결과 패널의 60%) ↔ 원래 크기
+    const setConsole = (v) => {
+      if (v) { root.style.setProperty('--console-h', v + 'px'); sizes['console-h'] = v; }
+      else { root.style.removeProperty('--console-h'); delete sizes['console-h']; }
+      store.set('sizes', sizes);
+    };
+    $('.con-gutter').addEventListener('dblclick', () => setConsole(0));
+    $('#growConsoleBtn').addEventListener('click', () => {
+      const big = Math.round($('#output').getBoundingClientRect().height * 0.6);
+      const cur = $('.console-wrap').getBoundingClientRect().height;
+      setConsole(cur >= big - 10 ? 0 : big);
     });
   }
 
