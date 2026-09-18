@@ -15,6 +15,39 @@
   };
   const COURSE_NAME = `OpenCV-Python ${C.meta ? C.meta.name : '강좌'}`;
 
+  /* -------------------------------------------------------- 교사용 잠금 --- */
+  // 교사용 화면(정답 · 교사 노트)은 비밀번호로 보호. 과정과 상관없이 이 브라우저에서 한 번 확인하면 유지됨
+  const TEACHER_PASSWORD = '933228';
+  const isTeacherUnlocked = () => store.get('teacherUnlocked', false);
+  const unlockTeacher = () => store.set('teacherUnlocked', true);
+  const gate = { root: $('#teacherGate'), form: $('#teacherGateForm'), pw: $('#teacherGatePw'), err: $('#teacherGateErr'), cancel: $('#teacherGateCancel') };
+  let gateResolve = null;
+  function showTeacherGate() {
+    return new Promise((resolve) => {
+      gateResolve = resolve;
+      gate.err.classList.add('hidden');
+      gate.pw.value = '';
+      gate.root.classList.remove('hidden');
+      setTimeout(() => gate.pw.focus(), 30);
+    });
+  }
+  function closeTeacherGate(ok) {
+    gate.root.classList.add('hidden');
+    if (gateResolve) { gateResolve(ok); gateResolve = null; }
+  }
+  gate.form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (gate.pw.value === TEACHER_PASSWORD) { unlockTeacher(); closeTeacherGate(true); }
+    else {
+      gate.err.classList.remove('hidden');
+      gate.form.classList.remove('shake'); void gate.form.offsetWidth; gate.form.classList.add('shake');
+      gate.pw.value = ''; gate.pw.focus();
+    }
+  });
+  gate.cancel.addEventListener('click', () => closeTeacherGate(false));
+  gate.root.addEventListener('click', (e) => { if (e.target === gate.root) closeTeacherGate(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !gate.root.classList.contains('hidden')) closeTeacherGate(false); });
+
   const el = {
     nav: $('#navTree'), search: $('#navSearch'), content: $('#content'),
     progressBar: $('#progressBar'), progressText: $('#progressText'),
@@ -24,8 +57,10 @@
 
   /* ------------------------------------------------ 역할(학생/교사) · 보기 방식 --- */
   const params = new URLSearchParams(location.search);
+  let pendingTeacherParam = false;
   if (['student', 'teacher'].includes(params.get('role'))) {
-    store.set('role', params.get('role'));
+    if (params.get('role') === 'teacher' && !isTeacherUnlocked()) pendingTeacherParam = true;
+    else store.set('role', params.get('role'));
     params.delete('role');   // 주소창의 ?role= 은 한 번만 적용 (?course= 는 유지)
     history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params : '') + location.hash);
   }
@@ -49,15 +84,21 @@
     document.body.classList.toggle('role-teacher', role === 'teacher');
     $$('.role-switch button').forEach((b) => b.classList.toggle('active', b.dataset.role === role));
   }
-  $$('.role-switch button').forEach((b) => b.addEventListener('click', () => {
-    if (role === b.dataset.role) return;
-    role = b.dataset.role;
+  async function switchRole(target) {
+    if (role === target) return;
+    if (target === 'teacher' && !isTeacherUnlocked()) {
+      const ok = await showTeacherGate();
+      if (!ok) return;
+    }
+    role = target;
     store.set('role', role);
     cleanHash();
     applyRole();
     route();
-  }));
+  }
+  $$('.role-switch button').forEach((b) => b.addEventListener('click', () => switchRole(b.dataset.role)));
   applyRole();
+  if (pendingTeacherParam) showTeacherGate().then((ok) => { if (ok) switchRole('teacher'); });
 
   /** 주소의 #교시@슬라이드번호 에서 슬라이드 번호를 떼어냄 (보기 전환 시 딥링크가 다시 적용되지 않도록) */
   function cleanHash() {

@@ -407,6 +407,19 @@ body.editor-folded .hgutter, body.editor-folded .editor-host { display: none; }
 
 .lightbox { position: fixed; inset: 0; background: rgba(0, 0, 0, .85); display: grid; place-items: center; z-index: 100; cursor: zoom-out; padding: 24px; }
 .lightbox canvas { max-width: 96vw; max-height: 88vh; image-rendering: pixelated; background: #fff; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: rgba(10, 12, 16, .55); }
+.modal-backdrop.hidden { display: none; }
+.modal { width: min(320px, 90vw); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+.modal h3 { margin: 0 0 6px; font-size: 16px; }
+.modal p.muted { margin: 0 0 14px; font-size: 13px; color: var(--muted); }
+.modal input[type="password"] { width: 100%; box-sizing: border-box; padding: 9px 12px; font-size: 15px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-2); color: var(--text); letter-spacing: 2px; }
+.modal input[type="password"]:focus { outline: none; border-color: var(--accent); }
+.modal-err { color: var(--danger); font-size: 12.5px; margin: 8px 0 0; }
+.modal-err.hidden { display: none; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.modal.shake { animation: modal-shake .3s; }
+@keyframes modal-shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
 .lightbox-cap { color: #ddd; font-size: 13px; margin-top: 8px; }
 
 /* ------------------------------------------------------ 역할 · 보기 도구 */

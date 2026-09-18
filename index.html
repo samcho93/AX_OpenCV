@@ -121,6 +121,19 @@
 
   <div id="lightbox" class="lightbox hidden"><canvas id="lightboxCanvas"></canvas><div class="lightbox-cap" id="lightboxCap"></div></div>
 
+  <div id="teacherGate" class="modal-backdrop hidden">
+    <form id="teacherGateForm" class="modal">
+      <h3>🔒 교사용 비밀번호</h3>
+      <p class="muted">교사용 화면(정답 · 교사 노트)에 들어가려면 비밀번호를 입력하세요.</p>
+      <input id="teacherGatePw" type="password" inputmode="numeric" autocomplete="off" placeholder="비밀번호">
+      <p id="teacherGateErr" class="modal-err hidden">비밀번호가 올바르지 않습니다.</p>
+      <div class="modal-actions">
+        <button type="button" id="teacherGateCancel" class="btn ghost">취소</button>
+        <button type="submit" class="btn primary">확인</button>
+      </div>
+    </form>
+  </div>
+
   <!-- 데이터 -->
   <script src="js/images-data.js"></script>
   <script>
