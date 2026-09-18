@@ -791,6 +791,12 @@
     const onSlide = (e) => e.target.closest && e.target.closest('.deck-wrap');
     el.content.addEventListener('wheel', (e) => {
       if (!onSlide(e) || e.ctrlKey || e.metaKey) return;
+      // 스크롤 막대가 있는 영역(슬라이드의 긴 코드 등) 위에서는 그 영역을 스크롤
+      for (let n = e.target; n && !n.classList.contains('deck-wrap'); n = n.parentElement) {
+        const cs = getComputedStyle(n);
+        if ((n.scrollHeight > n.clientHeight + 1 && /auto|scroll/.test(cs.overflowY))
+          || (e.shiftKey && n.scrollWidth > n.clientWidth + 1 && /auto|scroll/.test(cs.overflowX))) return;
+      }
       if (getComputedStyle(out).display === 'none') return;   // 결과 창이 숨겨진 전체 화면 슬라이드
       e.preventDefault();
       const d = e.deltaY || e.deltaX;
