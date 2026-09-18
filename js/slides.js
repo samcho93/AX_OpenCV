@@ -244,7 +244,7 @@
       this.slides = build(lesson);
       this.key = 'ocv:slide:' + lesson.id;
       let saved = 0;
-      try { saved = Number(localStorage.getItem(this.key)) || 0; } catch (_) {}
+      if (opts.resume !== false) { try { saved = Number(localStorage.getItem(this.key)) || 0; } catch (_) {} }
       this.i = Math.min(Math.max(0, saved), this.slides.length - 1);
       this.timer = { start: null, acc: 0, raf: 0 };
       this.shell();

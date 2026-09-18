@@ -385,10 +385,17 @@
     }
   }
 
+  // 슬라이드 위치 이어 보기: 같은 교시를 다시 그릴 때(새로 고침 · 보기 전환)와 #교시@번호 딥링크만.
+  // 다른 교시로 이동하면 항상 첫 슬라이드부터 시작
+  let shownLessonId = store.get('last', null);
+  let resumeSlide = false;
   function renderLesson(l) {
+    const resume = resumeSlide || l.id === shownLessonId;
+    resumeSlide = false;
+    shownLessonId = l.id;
     current = l;
     ensureAssets(l);
-    if (viewOf() === 'slides') return renderSlides(l);
+    if (viewOf() === 'slides') return renderSlides(l, resume);
     Slides.unmount();
     el.content.classList.remove('slides-mode');
     const week = C.weeks.find((w) => w.no === l.week);
@@ -474,11 +481,12 @@
     document.title = `${l.week}주 ${l.period}교시 · ${l.title} | ${COURSE_NAME}`;
   }
 
-  function renderSlides(l) {
+  function renderSlides(l, resume = true) {
     el.content.classList.add('slides-mode');
     el.content.innerHTML = '';
     Slides.mount(el.content, l, {
       role,
+      resume,
       api: {
         setView,
         loadCode(code, title, runNow) {
@@ -641,6 +649,7 @@
     if (slideNo && C.byId[key]) {
       try { localStorage.setItem('ocv:slide:' + key, String(Math.max(0, Number(slideNo) - 1))); } catch (_) {}
       store.set('view:' + role, 'slides');
+      resumeSlide = true;
     }
     if (!C.byId[key]) { Slides.unmount(); el.content.classList.remove('slides-mode'); }
     if (C.byId[key]) renderLesson(C.byId[key]);
