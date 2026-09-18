@@ -239,6 +239,31 @@
 
   const EDGE = 0.12;   // 클릭 이동 구간: 슬라이드 너비의 양쪽 12%
 
+  /* ------------------------------------------------ 판서(슬라이드 위에 그리기) --- */
+  const INK_COLORS = [['#e53935', '빨강'], ['#1e63e9', '파랑'], ['#1b9e4b', '초록'], ['#ffc400', '노랑'], ['#111111', '검정'], ['#ffffff', '흰색']];
+  const INK_SIZES = [[3, '가늘게'], [6, '보통'], [12, '굵게']];
+  const INK_TOOLS = [['pen', '🖊', '펜'], ['hl', '🖍', '형광펜'], ['eraser', '🧽', '지우개'], ['pointer', '👆', '지시봉 (그리지 않음)']];
+  const inkStore = new Map();   // "교시id@슬라이드번호" -> 선 목록 (페이지를 새로 고치기 전까지 유지)
+  const inkPrefs = (() => {
+    const d = { tool: 'pen', color: '#e53935', size: 6 };
+    try { return { ...d, ...JSON.parse(localStorage.getItem('ocv:ink') || '{}') }; } catch (_) { return d; }
+  })();
+  const saveInkPrefs = () => { try { localStorage.setItem('ocv:ink', JSON.stringify(inkPrefs)); } catch (_) {} };
+  function inkToolbarHtml() {
+    return `<div class="deck-tools" role="toolbar" aria-label="판서 도구">
+      <span class="dt-label">✏️ 판서</span>
+      <span class="dt-group">${INK_TOOLS.map(([k, ic, t]) => `<button class="dt-btn dt-tool" data-ink-tool="${k}" title="${t}">${ic}<span>${t.split(' ')[0]}</span></button>`).join('')}</span>
+      <span class="dt-sep"></span>
+      <span class="dt-group">${INK_COLORS.map(([c, t]) => `<button class="dt-swatch" data-ink-color="${c}" title="${t}" style="--sw:${c}"></button>`).join('')}</span>
+      <span class="dt-sep"></span>
+      <span class="dt-group">${INK_SIZES.map(([s, t]) => `<button class="dt-btn dt-size" data-ink-size="${s}" title="${t}"><i style="--d:${Math.min(16, s + 2)}px"></i></button>`).join('')}</span>
+      <span class="dt-sep"></span>
+      <button class="dt-btn" data-ink-act="undo" title="되돌리기 (Ctrl+Z)">↶<span>되돌리기</span></button>
+      <button class="dt-btn" data-ink-act="clear" title="이 슬라이드의 판서 지우기">🗑<span>이 장 지우기</span></button>
+      <button class="dt-btn" data-ink-act="clear-all" title="이 교시의 모든 판서 지우기">🗑<span>모두</span></button>
+    </div>`;
+  }
+
   class Deck {
     constructor(root, lesson, opts) {
       this.root = root;
@@ -275,6 +300,7 @@
           <button class="btn tiny ghost" data-act="overview" title="슬라이드 목록 (G)">▦ 목록</button>
           <button class="btn tiny ghost" data-act="doc" title="스크롤 문서로 보기">📄 문서</button>
           <button class="btn tiny primary" data-act="fullscreen" title="전체 화면 발표 (F)">⛶ 전체 화면</button>
+          ${teacher ? inkToolbarHtml() : ''}
         </div>
         <div class="deck-wrap"><div class="deck-stage"></div></div>
         <div class="deck-progress"><div></div></div>
@@ -290,7 +316,7 @@
       // 슬라이드 클릭 이동: 슬라이드 왼쪽/오른쪽 가장자리 구간에서만 (교사용은 항상, 학생용은 전체 화면에서)
       // 가장자리 = 화살표 커서, 가운데 = 지시봉 커서, 버튼 · 링크 = 손가락 커서
       const INTERACTIVE = 'button, a, input, select, textarea, label, .sl-opt, [data-act]';
-      const zoneOf = (e) => {
+      const zoneOf = (this.zoneOf = (e) => {
         if (!(this.role === 'teacher' || document.body.classList.contains('presenting'))) return null;
         if (e.target.closest(INTERACTIVE)) return null;
         const r = this.stage.getBoundingClientRect();
@@ -298,8 +324,9 @@
         if (e.clientX < r.left + edge) return 'prev';
         if (e.clientX > r.right - edge) return 'next';
         return 'pointer';
-      };
+      });
       this.wrap.addEventListener('click', (e) => {
+        if (this.suppressClick) { this.suppressClick = false; return; }
         const z = zoneOf(e);
         if (z !== 'prev' && z !== 'next') return;
         const sel = window.getSelection && String(window.getSelection());
@@ -318,6 +345,147 @@
       slider.addEventListener('input', () => this.go(Number(slider.value) - 1));
       // 슬라이더 조작 중 ←/→ 키가 슬라이더 값만 바꾸지 않도록 키보드 포커스를 돌려 줌
       slider.addEventListener('change', () => slider.blur());
+      if (this.role === 'teacher') this.initInk();
+    }
+
+    /* ---------------------------------------------- 판서 --- */
+    initInk() {
+      const K = 2;   // 선명하게: 슬라이드(1280×720)의 2배 해상도
+      this.ink = document.createElement('canvas');
+      this.ink.className = 'deck-ink';
+      this.ink.width = W * K; this.ink.height = H * K;
+      this.inkCtx = this.ink.getContext('2d');
+      this.inkCtx.scale(K, K);
+      this.inkUndo = new Map();   // 슬라이드별 되돌리기 기록
+      this.tools = this.el.querySelector('.deck-tools');
+      this.tools.addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        const drawTool = () => { if (inkPrefs.tool === 'eraser' || inkPrefs.tool === 'pointer') inkPrefs.tool = 'pen'; };
+        if (b.dataset.inkTool) inkPrefs.tool = b.dataset.inkTool;
+        else if (b.dataset.inkColor) { inkPrefs.color = b.dataset.inkColor; drawTool(); }
+        else if (b.dataset.inkSize) { inkPrefs.size = Number(b.dataset.inkSize); drawTool(); }
+        else if (b.dataset.inkAct === 'undo') this.inkUndoStep();
+        else if (b.dataset.inkAct === 'clear') this.inkEdit(() => []);
+        else if (b.dataset.inkAct === 'clear-all') {
+          for (const k of [...inkStore.keys()]) if (k.startsWith(this.l.id + '@')) inkStore.delete(k);
+          this.inkUndo.clear();
+          this.drawInk();
+        }
+        saveInkPrefs();
+        this.syncInkTools();
+      });
+
+      const toStage = (e) => {
+        const r = this.stage.getBoundingClientRect();
+        return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H];
+      };
+      let cur = null;
+      this.wrap.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 || inkPrefs.tool === 'pointer') return;
+        if (this.zoneOf(e) !== 'pointer') return;
+        e.preventDefault();                    // 글자 선택 대신 그리기
+        try { this.wrap.setPointerCapture(e.pointerId); } catch (_) {}
+        const p = toStage(e);
+        if (inkPrefs.tool === 'eraser') {
+          this.inkSnapshot();
+          cur = { erase: true };
+          this.inkErase(p);
+        } else {
+          cur = { stroke: { tool: inkPrefs.tool, color: inkPrefs.color, size: inkPrefs.size, pts: [p] }, start: [e.clientX, e.clientY], moved: false };
+        }
+      });
+      this.wrap.addEventListener('pointermove', (e) => {
+        if (!cur) return;
+        const p = toStage(e);
+        if (cur.erase) { this.inkErase(p); return; }
+        if (!cur.moved && Math.hypot(e.clientX - cur.start[0], e.clientY - cur.start[1]) < 3) return;
+        if (!cur.moved) { cur.moved = true; this.inkSnapshot(); this.inkStrokes().push(cur.stroke); }
+        cur.stroke.pts.push(p);
+        this.drawInk();
+      });
+      const end = (e) => {
+        if (!cur) return;
+        if (cur.moved || cur.erase) this.suppressClick = true;   // 그리기를 끝낸 곳이 가장자리여도 넘어가지 않게
+        cur = null;
+        try { this.wrap.releasePointerCapture(e.pointerId); } catch (_) {}
+        this.syncInkTools();
+      };
+      this.wrap.addEventListener('pointerup', end);
+      this.wrap.addEventListener('pointercancel', end);
+      this.inkKey = (e) => {
+        if (active !== this || !this.root.isConnected) return;
+        const t = e.target;
+        if (t.closest && t.closest('input, textarea, .CodeMirror, [contenteditable]')) return;
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); this.inkUndoStep(); }
+      };
+      document.addEventListener('keydown', this.inkKey);
+      this.syncInkTools();
+    }
+
+    syncInkTools() {
+      if (!this.tools) return;
+      this.tools.querySelectorAll('[data-ink-tool]').forEach((b) => b.classList.toggle('on', b.dataset.inkTool === inkPrefs.tool));
+      this.tools.querySelectorAll('[data-ink-color]').forEach((b) => b.classList.toggle('on', b.dataset.inkColor === inkPrefs.color));
+      this.tools.querySelectorAll('[data-ink-size]').forEach((b) => b.classList.toggle('on', Number(b.dataset.inkSize) === inkPrefs.size));
+      this.wrap.dataset.tool = inkPrefs.tool;
+      const k = this.inkKeyOf();
+      this.tools.querySelector('[data-ink-act="undo"]').disabled = !(this.inkUndo.get(k) || []).length;
+      this.tools.querySelector('[data-ink-act="clear"]').disabled = !(inkStore.get(k) || []).length;
+    }
+    inkKeyOf() { return `${this.l.id}@${this.i}`; }
+    inkStrokes() {
+      const k = this.inkKeyOf();
+      if (!inkStore.has(k)) inkStore.set(k, []);
+      return inkStore.get(k);
+    }
+    inkSnapshot() {
+      const k = this.inkKeyOf();
+      const st = this.inkUndo.get(k) || [];
+      st.push(JSON.stringify(inkStore.get(k) || []));
+      if (st.length > 50) st.shift();
+      this.inkUndo.set(k, st);
+    }
+    inkEdit(fn) {
+      this.inkSnapshot();
+      inkStore.set(this.inkKeyOf(), fn(this.inkStrokes()));
+      this.drawInk();
+    }
+    inkUndoStep() {
+      const st = this.inkUndo.get(this.inkKeyOf());
+      if (!st || !st.length) return;
+      inkStore.set(this.inkKeyOf(), JSON.parse(st.pop()));
+      this.drawInk();
+    }
+    /** 지우개: 커서 근처를 지나는 선을 통째로 지움 */
+    inkErase([x, y]) {
+      const strokes = this.inkStrokes();
+      const keep = strokes.filter((s) => !s.pts.some(([px, py]) => Math.hypot(px - x, py - y) < 14 + (s.tool === 'hl' ? s.size * 1.5 : s.size / 2)));
+      if (keep.length !== strokes.length) { inkStore.set(this.inkKeyOf(), keep); this.drawInk(); }
+    }
+    drawInk() {
+      if (!this.ink) return;
+      if (this.ink.parentNode !== this.stage) this.stage.appendChild(this.ink);
+      const c = this.inkCtx;
+      c.clearRect(0, 0, W, H);
+      for (const s of inkStore.get(this.inkKeyOf()) || []) {
+        const p = s.pts;
+        c.save();
+        c.lineCap = s.tool === 'hl' ? 'butt' : 'round';
+        c.lineJoin = 'round';
+        c.strokeStyle = s.color;
+        c.lineWidth = s.tool === 'hl' ? s.size * 3 : s.size;
+        if (s.tool === 'hl') c.globalAlpha = 0.35;
+        c.beginPath();
+        c.moveTo(p[0][0], p[0][1]);
+        for (let j = 1; j < p.length - 1; j++) {
+          c.quadraticCurveTo(p[j][0], p[j][1], (p[j][0] + p[j + 1][0]) / 2, (p[j][1] + p[j + 1][1]) / 2);
+        }
+        if (p.length > 1) c.lineTo(p[p.length - 1][0], p[p.length - 1][1]);
+        c.stroke();
+        c.restore();
+      }
+      this.syncInkTools();
     }
 
     fit() {
@@ -369,6 +537,7 @@
       }
       // 발표 중에는 코드·실습 슬라이드에서만 결과 패널을 보여줌
       document.body.classList.toggle('slide-has-output', s.kind === 'code' || s.kind === 'practice');
+      if (this.ink) this.drawInk();
       this.fit();
       this.broadcast();
     }
@@ -472,6 +641,7 @@
     }
 
     destroy() {
+      if (this.inkKey) document.removeEventListener('keydown', this.inkKey);
       clearTimeout(this.timer.raf);
       this.ro.disconnect();
       document.body.classList.remove('slide-has-output');
