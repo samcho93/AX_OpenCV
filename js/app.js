@@ -98,8 +98,29 @@
       Tab: (cm) => (cm.somethingSelected() ? cm.indentSelection('add') : cm.replaceSelection('    ', 'end')),
       'Shift-Tab': (cm) => cm.indentSelection('subtract'),
       'Ctrl-/': 'toggleComment', 'Cmd-/': 'toggleComment',
+      'Ctrl-=': () => setCodeFont(codeFont + 1), 'Cmd-=': () => setCodeFont(codeFont + 1),
+      'Ctrl--': () => setCodeFont(codeFont - 1), 'Cmd--': () => setCodeFont(codeFont - 1),
+      'Ctrl-0': () => setCodeFont(13.5), 'Cmd-0': () => setCodeFont(13.5),
     },
   });
+
+  /* 실습 코드 글씨 크기: A− / A+ 버튼, 에디터에서 Ctrl+휠 · Ctrl+= · Ctrl+- · Ctrl+0 (브라우저에 기억) */
+  let codeFont = Number(store.get('codeFont', 13.5)) || 13.5;
+  function setCodeFont(px) {
+    codeFont = Math.round(Math.max(10, Math.min(32, px)) * 2) / 2;
+    document.documentElement.style.setProperty('--code-fs', codeFont + 'px');
+    $('#fontSizeLabel').textContent = codeFont;
+    store.set('codeFont', codeFont);
+    editor.refresh();
+  }
+  setCodeFont(codeFont);
+  $('#fontDownBtn').addEventListener('click', () => setCodeFont(codeFont - 1));
+  $('#fontUpBtn').addEventListener('click', () => setCodeFont(codeFont + 1));
+  $('#editorHost').addEventListener('wheel', (e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    setCodeFont(codeFont + (e.deltaY < 0 ? 1 : -1));
+  }, { passive: false });
   let errorMark = null;
   let current = null;       // 현재 교시
   let saveTimer = 0;
