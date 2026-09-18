@@ -260,9 +260,11 @@
       const teacher = this.role === 'teacher';
       this.root.innerHTML = `<div class="deck ${teacher ? 'is-teacher' : ''}">
         <div class="deck-bar">
+          <button class="btn tiny ghost" data-act="first" title="처음 슬라이드로 (Home)">⏮ 처음</button>
           <button class="icon-btn" data-act="prev" title="이전 (←)">◀</button>
           <span class="deck-count"></span>
           <button class="icon-btn" data-act="next" title="다음 (→, Space)">▶</button>
+          <input class="deck-slider" type="range" min="1" max="1" value="1" step="1" title="끌어서 슬라이드 이동">
           <span class="deck-name"></span>
           <span class="spacer"></span>
           ${teacher ? `<span class="deck-timer" title="수업 경과 시간 (클릭: 시작/일시정지)" data-act="timer">⏱ 00:00</span>
@@ -283,12 +285,26 @@
       this.stage.style.width = W + 'px';
       this.stage.style.height = H + 'px';
       this.el.addEventListener('click', (e) => this.onClick(e));
-      // 슬라이드 빈 곳 클릭 = 다음 (전체 화면에서만)
+      // 슬라이드 클릭: 오른쪽 절반 = 다음, 왼쪽 절반 = 이전 (교사용은 항상, 학생용은 전체 화면에서)
       this.wrap.addEventListener('click', (e) => {
-        if (!document.body.classList.contains('presenting')) return;
-        if (e.target.closest('button, a, input, pre, .sl-options, table, .sl-hint, .sl-explain')) return;
-        this.go(this.i + 1);
+        if (!(this.role === 'teacher' || document.body.classList.contains('presenting'))) return;
+        if (e.target.closest('button, a, input, select, textarea, label, pre, code, .sl-options, table, .sl-hint, .sl-explain')) return;
+        const sel = window.getSelection && String(window.getSelection());
+        if (sel && sel.trim()) return;          // 글자를 드래그해 선택한 경우는 넘기지 않음
+        const r = this.stage.getBoundingClientRect();
+        this.go(this.i + (e.clientX < r.left + r.width / 2 ? -1 : 1));
       });
+      this.wrap.addEventListener('mousemove', (e) => {
+        if (!(this.role === 'teacher' || document.body.classList.contains('presenting'))) return;
+        const r = this.stage.getBoundingClientRect();
+        this.wrap.classList.toggle('nav-left', e.clientX < r.left + r.width / 2);
+        this.wrap.classList.add('nav-click');
+      });
+      const slider = this.el.querySelector('.deck-slider');
+      slider.max = String(this.slides.length);
+      slider.addEventListener('input', () => this.go(Number(slider.value) - 1));
+      // 슬라이더 조작 중 ←/→ 키가 슬라이더 값만 바꾸지 않도록 키보드 포커스를 돌려 줌
+      slider.addEventListener('change', () => slider.blur());
     }
 
     fit() {
@@ -327,6 +343,8 @@
         for (let fs = 30; fs >= 20 && main.scrollHeight > main.clientHeight + 2; fs -= 2) sl.style.fontSize = fs + 'px';
       }
       this.el.querySelector('.deck-count').textContent = `${i + 1} / ${this.slides.length}`;
+      const slider = this.el.querySelector('.deck-slider');
+      if (slider && Number(slider.value) !== i + 1) slider.value = String(i + 1);
       this.el.querySelector('.deck-name').textContent = s.kind === 'title' ? this.l.title : textOf(s.title || '');
       this.el.querySelector('.deck-progress > div').style.width = ((i + 1) / this.slides.length) * 100 + '%';
       const notes = this.el.querySelector('.notes-body');
@@ -373,7 +391,8 @@
       if (!t) return;
       const act = t.dataset.act;
       const l = this.l;
-      if (act === 'prev') this.go(this.i - 1);
+      if (act === 'first') this.go(0);
+      else if (act === 'prev') this.go(this.i - 1);
       else if (act === 'next') this.go(this.i + 1);
       else if (act === 'fullscreen') toggleFullscreen();
       else if (act === 'doc') this.api.setView('doc');
