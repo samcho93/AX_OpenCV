@@ -189,3 +189,20 @@
 .ntoast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #1f2937; color: #fff; padding: 9px 16px; border-radius: 10px; font-size: 13.5px; z-index: 60; box-shadow: 0 8px 24px rgba(0, 0, 0, .3); }
 
 @media (max-width: 1200px) { .nodes-page { --pal-w: 210px; --right-w: 360px; } .nbrand small { display: none; } }
+
+/* 선택지가 있는 인자 입력칸 (▾ 로 전체 목록) */
+.ncombo { position: relative; display: flex; flex: 1; min-width: 0; align-items: stretch; }
+.ncombo > input { flex: 1; min-width: 0; border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+.ncombo-btn { flex: none; width: 22px; padding: 0; border: 1px solid var(--border-strong); border-left: 0; border-radius: 0 6px 6px 0;
+  background: var(--surface-2); color: var(--muted); font-size: 11px; cursor: pointer; }
+.ncombo-btn:hover { color: var(--accent); background: var(--accent-soft); }
+.ncombo-list { position: absolute; left: 0; right: 0; top: calc(100% + 2px); z-index: 30; max-height: 220px; overflow: auto;
+  display: flex; flex-direction: column; padding: 3px; background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 7px; box-shadow: 0 6px 18px rgba(16, 24, 40, .2); }
+.ncombo-list[hidden] { display: none; }
+.ncombo-opt { text-align: left; font: 11.5px var(--mono); padding: 4px 8px; border: 0; border-radius: 5px; background: none; color: var(--text); cursor: pointer; white-space: nowrap; }
+.ncombo-opt:hover { background: var(--accent-soft); color: var(--accent); }
+.ncombo-opt.cur { font-weight: 700; color: var(--accent); }
+.ncombo-opt.cur::before { content: '✓ '; }
+.nnode.combo-open { z-index: 10; }
+.ncombo-list.up { top: auto; bottom: calc(100% + 2px); }

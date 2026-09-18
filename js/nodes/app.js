@@ -360,10 +360,9 @@
       rows.push(`<label class="row"><span>함수</span><input data-f="fn" value="${esc(n.fn)}" spellcheck="false"></label>`);
       (n.args || []).forEach((arg, i) => {
         const sa = spec && spec.args.find((x) => x.name === arg.name);
-        const listId = `insp-opts-${i}`;
+        const input = `<input data-arg="${i}" value="${esc(arg.expr)}" placeholder="${esc(sa && sa.hint ? sa.hint : '')}" spellcheck="false">`;
         rows.push(`<label class="row"><span title="${sa && sa.req ? '필수' : '선택'}">${esc(arg.name)}${sa && sa.req ? ' *' : ''}</span>
-          <input data-arg="${i}" value="${esc(arg.expr)}" placeholder="${esc(sa && sa.hint ? sa.hint : '')}" spellcheck="false" ${sa && sa.opts ? `list="${listId}"` : ''}>
-          ${sa && sa.opts ? `<datalist id="${listId}">${sa.opts.map((o) => `<option value="${esc(o)}">`).join('')}</datalist>` : ''}</label>`);
+          ${sa && sa.opts ? NodeCombo.html(input, sa.opts) : input}</label>`);
       });
       rows.push(`<label class="row"><span>결과 변수</span><input data-f="outs" value="${esc((n.outs || []).join(', '))}" placeholder="${esc(spec ? spec.outs.join(', ') : '')}" spellcheck="false"></label>`);
     } else if (n.type === 'code') {

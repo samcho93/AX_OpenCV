@@ -140,14 +140,11 @@
           const filled = String(a.expr ?? '').trim() !== '';
           if (!req && !filled && !showAll) { hidden++; return; }
           const opts = sa && sa.opts ? sa.opts : null;
-          // 노드 id 기준으로 고유하게: 같은 함수(예: cv.imread)를 쓰는 노드가 여러 개면
-          // 함수 이름만으로 만든 id 는 문서 안에서 중복돼 datalist 풀다운이 붙었다 떨어졌다 함
-          const listId = opts ? `opts-${esc(n.id)}-${esc(a.name)}`.replace(/[^\w-]/g, '_') : '';
+          const input = `<input class="nn-expr" data-slot="${i}" value="${esc(a.expr ?? '')}" placeholder="${esc(sa && sa.hint ? sa.hint : (req ? '값 또는 연결' : '생략'))}" spellcheck="false">`;
           rows.push(`<div class="nn-row in ${req ? 'req' : 'opt'}" data-slot="${i}">
             <span class="port in" data-slot="${i}" title="여기에 연결"></span>
             <label title="${esc(a.name)}${req ? ' (필수)' : ' (선택)'}">${esc(a.name)}</label>
-            <input class="nn-expr" data-slot="${i}" value="${esc(a.expr ?? '')}" placeholder="${esc(sa && sa.hint ? sa.hint : (req ? '값 또는 연결' : '생략'))}" spellcheck="false" ${listId ? `list="${listId}"` : ''}>
-            ${opts ? `<datalist id="${listId}">${opts.map((o) => `<option value="${esc(o)}">`).join('')}</datalist>` : ''}
+            ${opts ? NodeCombo.html(input, opts) : input}
           </div>`);
         });
         if (hidden || showAll) rows.push(`<button class="nn-more" data-act="optional">${showAll ? '▴ 선택 인자 숨기기' : `▾ 선택 인자 ${hidden}개`}</button>`);
@@ -481,6 +478,7 @@
       let drag = null;
 
       wrap.addEventListener('wheel', (e) => {
+        if (e.target.closest('.ncombo-list')) return;   // 선택 목록은 스크롤
         e.preventDefault();
         const r = wrap.getBoundingClientRect();
         this.zoomAt(e.deltaY < 0 ? 1.1 : 1 / 1.1, e.clientX - r.left, e.clientY - r.top);
