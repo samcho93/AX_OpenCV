@@ -237,7 +237,7 @@
 
   const notesFolded = () => { try { return localStorage.getItem('ocv:notesFolded') === '1'; } catch (_) { return false; } };
 
-  const EDGE = 0.12;   // 클릭 이동 구간: 슬라이드 너비의 양쪽 12%
+  const EDGE = 0.06;   // 클릭 이동 구간: 슬라이드 너비의 양쪽 6%
 
   /* ------------------------------------------------ 판서(슬라이드 위에 그리기) --- */
   const INK_COLORS = [['#e53935', '빨강'], ['#1e63e9', '파랑'], ['#1b9e4b', '초록'], ['#ffc400', '노랑'], ['#111111', '검정'], ['#ffffff', '흰색']];
@@ -320,7 +320,7 @@
         if (!(this.role === 'teacher' || document.body.classList.contains('presenting'))) return null;
         if (e.target.closest(INTERACTIVE)) return null;
         const r = this.stage.getBoundingClientRect();
-        const edge = Math.max(40, r.width * EDGE);
+        const edge = Math.max(28, r.width * EDGE);
         if (e.clientX < r.left + edge) return 'prev';
         if (e.clientX > r.right - edge) return 'next';
         return 'pointer';
@@ -333,7 +333,8 @@
         if (sel && sel.trim()) return;          // 글자를 드래그해 선택한 경우는 넘기지 않음
         this.go(this.i + (z === 'prev' ? -1 : 1));
       });
-      this.wrap.addEventListener('mousemove', (e) => {
+      this.wrap.addEventListener('pointermove', (e) => {
+        if (this.wrap.classList.contains('drawing')) return;
         const z = zoneOf(e);
         this.wrap.classList.toggle('zone-prev', z === 'prev');
         this.wrap.classList.toggle('zone-next', z === 'next');
@@ -386,6 +387,7 @@
         if (this.zoneOf(e) !== 'pointer') return;
         e.preventDefault();                    // 글자 선택 대신 그리기
         try { this.wrap.setPointerCapture(e.pointerId); } catch (_) {}
+        this.wrap.classList.add('drawing');
         const p = toStage(e);
         if (inkPrefs.tool === 'eraser') {
           this.inkSnapshot();
@@ -408,6 +410,7 @@
         if (!cur) return;
         if (cur.moved || cur.erase) this.suppressClick = true;   // 그리기를 끝낸 곳이 가장자리여도 넘어가지 않게
         cur = null;
+        this.wrap.classList.remove('drawing');
         try { this.wrap.releasePointerCapture(e.pointerId); } catch (_) {}
         this.syncInkTools();
       };
