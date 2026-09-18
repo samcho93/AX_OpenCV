@@ -140,7 +140,9 @@
           const filled = String(a.expr ?? '').trim() !== '';
           if (!req && !filled && !showAll) { hidden++; return; }
           const opts = sa && sa.opts ? sa.opts : null;
-          const listId = opts ? `opts-${esc(G.normFn(n.fn))}-${esc(a.name)}`.replace(/[^\w-]/g, '_') : '';
+          // 노드 id 기준으로 고유하게: 같은 함수(예: cv.imread)를 쓰는 노드가 여러 개면
+          // 함수 이름만으로 만든 id 는 문서 안에서 중복돼 datalist 풀다운이 붙었다 떨어졌다 함
+          const listId = opts ? `opts-${esc(n.id)}-${esc(a.name)}`.replace(/[^\w-]/g, '_') : '';
           rows.push(`<div class="nn-row in ${req ? 'req' : 'opt'}" data-slot="${i}">
             <span class="port in" data-slot="${i}" title="여기에 연결"></span>
             <label title="${esc(a.name)}${req ? ' (필수)' : ' (선택)'}">${esc(a.name)}</label>
