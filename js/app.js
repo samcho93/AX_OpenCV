@@ -60,7 +60,10 @@
   let pendingTeacherParam = false;
   if (['student', 'teacher'].includes(params.get('role'))) {
     if (params.get('role') === 'teacher' && !isTeacherUnlocked()) pendingTeacherParam = true;
-    else store.set('role', params.get('role'));
+    else {
+      store.set('role', params.get('role'));
+      store.set('view:' + params.get('role'), params.get('role') === 'teacher' ? 'slides' : 'doc');
+    }
     params.delete('role');   // 주소창의 ?role= 은 한 번만 적용 (?course= 는 유지)
     history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params : '') + location.hash);
   }
@@ -92,6 +95,8 @@
     }
     role = target;
     store.set('role', role);
+    // 역할 버튼을 누르면 그 역할의 기본 보기로: 학생용 = 문서, 교사용 = 요약 슬라이드
+    store.set('view:' + role, role === 'teacher' ? 'slides' : 'doc');
     cleanHash();
     applyRole();
     route();
