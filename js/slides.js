@@ -237,6 +237,8 @@
 
   const notesFolded = () => { try { return localStorage.getItem('ocv:notesFolded') === '1'; } catch (_) { return false; } };
 
+  const EDGE = 0.12;   // 클릭 이동 구간: 슬라이드 너비의 양쪽 12%
+
   class Deck {
     constructor(root, lesson, opts) {
       this.root = root;
@@ -285,21 +287,32 @@
       this.stage.style.width = W + 'px';
       this.stage.style.height = H + 'px';
       this.el.addEventListener('click', (e) => this.onClick(e));
-      // 슬라이드 클릭: 오른쪽 절반 = 다음, 왼쪽 절반 = 이전 (교사용은 항상, 학생용은 전체 화면에서)
+      // 슬라이드 클릭 이동: 슬라이드 왼쪽/오른쪽 가장자리 구간에서만 (교사용은 항상, 학생용은 전체 화면에서)
+      // 가장자리 = 화살표 커서, 가운데 = 지시봉 커서, 버튼 · 링크 = 손가락 커서
+      const INTERACTIVE = 'button, a, input, select, textarea, label, .sl-opt, [data-act]';
+      const zoneOf = (e) => {
+        if (!(this.role === 'teacher' || document.body.classList.contains('presenting'))) return null;
+        if (e.target.closest(INTERACTIVE)) return null;
+        const r = this.stage.getBoundingClientRect();
+        const edge = Math.max(40, r.width * EDGE);
+        if (e.clientX < r.left + edge) return 'prev';
+        if (e.clientX > r.right - edge) return 'next';
+        return 'pointer';
+      };
       this.wrap.addEventListener('click', (e) => {
-        if (!(this.role === 'teacher' || document.body.classList.contains('presenting'))) return;
-        if (e.target.closest('button, a, input, select, textarea, label, pre, code, .sl-options, table, .sl-hint, .sl-explain')) return;
+        const z = zoneOf(e);
+        if (z !== 'prev' && z !== 'next') return;
         const sel = window.getSelection && String(window.getSelection());
         if (sel && sel.trim()) return;          // 글자를 드래그해 선택한 경우는 넘기지 않음
-        const r = this.stage.getBoundingClientRect();
-        this.go(this.i + (e.clientX < r.left + r.width / 2 ? -1 : 1));
+        this.go(this.i + (z === 'prev' ? -1 : 1));
       });
       this.wrap.addEventListener('mousemove', (e) => {
-        if (!(this.role === 'teacher' || document.body.classList.contains('presenting'))) return;
-        const r = this.stage.getBoundingClientRect();
-        this.wrap.classList.toggle('nav-left', e.clientX < r.left + r.width / 2);
-        this.wrap.classList.add('nav-click');
+        const z = zoneOf(e);
+        this.wrap.classList.toggle('zone-prev', z === 'prev');
+        this.wrap.classList.toggle('zone-next', z === 'next');
+        this.wrap.classList.toggle('zone-pointer', z === 'pointer');
       });
+      this.wrap.addEventListener('mouseleave', () => this.wrap.classList.remove('zone-prev', 'zone-next', 'zone-pointer'));
       const slider = this.el.querySelector('.deck-slider');
       slider.max = String(this.slides.length);
       slider.addEventListener('input', () => this.go(Number(slider.value) - 1));

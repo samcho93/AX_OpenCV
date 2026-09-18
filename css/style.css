@@ -443,8 +443,21 @@ body.role-teacher .teacher-only { display: block; }
 .deck-bar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .deck-count { font: 600 13px var(--mono); min-width: 58px; text-align: center; }
 .deck-slider { width: clamp(90px, 18vw, 240px); accent-color: var(--accent); cursor: pointer; }
-.deck-wrap.nav-click { cursor: e-resize; }
-.deck-wrap.nav-click.nav-left { cursor: w-resize; }
+/* 슬라이드 클릭 이동: 가장자리 = 화살표, 가운데 = 지시봉, 버튼 = 손가락 */
+.deck-wrap.zone-prev, .deck-wrap.zone-prev * { cursor: w-resize !important; }
+.deck-wrap.zone-next, .deck-wrap.zone-next * { cursor: e-resize !important; }
+.deck-wrap.zone-pointer, .deck-wrap.zone-pointer .deck-stage * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='5' y1='5' x2='29' y2='29' stroke='%23fff' stroke-width='5' stroke-linecap='round'/%3E%3Cline x1='5' y1='5' x2='29' y2='29' stroke='%235b4636' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='5' cy='5' r='4' fill='%23e53935' stroke='%23fff' stroke-width='1.5'/%3E%3C/svg%3E") 3 3, crosshair;
+}
+.deck-wrap.zone-pointer .deck-stage :is(button, a, [data-act], .sl-opt, input, select, label) { cursor: pointer; }
+/* 가장자리 구간 표시 */
+.deck-stage::before, .deck-stage::after { content: ''; position: absolute; top: 0; bottom: 0; width: 12%; z-index: 5; pointer-events: none; opacity: 0; transition: opacity .15s;
+  background-repeat: no-repeat; background-size: 56px 56px; }
+.deck-stage::before { left: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15 5l-7 7 7 7' fill='none' stroke='%232f6bed' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"), linear-gradient(90deg, rgba(47, 107, 237, .14), transparent);
+  background-position: 22px center, 0 0; background-size: 56px 56px, 100% 100%; }
+.deck-stage::after { right: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 5l7 7-7 7' fill='none' stroke='%232f6bed' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"), linear-gradient(270deg, rgba(47, 107, 237, .14), transparent);
+  background-position: calc(100% - 22px) center, 0 0; background-size: 56px 56px, 100% 100%; }
+.deck-wrap.zone-prev .deck-stage::before, .deck-wrap.zone-next .deck-stage::after { opacity: 1; }
 .deck-name { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38%; margin-left: 6px; }
 .deck-timer { font: 700 13px var(--mono); padding: 2px 8px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; user-select: none; }
 .deck-timer.over { color: var(--danger); border-color: var(--danger); }
@@ -565,7 +578,7 @@ body.presenting .deck-notes { display: none; }
 body.presenting.show-notes .deck-notes { display: flex; height: 22vh; }
 body.presenting .sl { box-shadow: none; border-radius: 0; }
 body.presenting.blackout .deck-wrap::after { content: ''; position: absolute; inset: 0; background: #000; z-index: 3; }
-body.presenting .deck-wrap { cursor: pointer; }
+body.presenting .deck-wrap { cursor: default; }
 
 /* ------------------------------------------------------------ 🚀 응용 예제 */
 body.app-page .center { grid-template-rows: minmax(0, 1fr) 0 0; }
