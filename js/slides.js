@@ -235,6 +235,8 @@
   let channel = null;
   try { channel = new BroadcastChannel(CHANNEL); } catch (_) {}
 
+  const notesFolded = () => { try { return localStorage.getItem('ocv:notesFolded') === '1'; } catch (_) { return false; } };
+
   class Deck {
     constructor(root, lesson, opts) {
       this.root = root;
@@ -272,7 +274,7 @@
         </div>
         <div class="deck-wrap"><div class="deck-stage"></div></div>
         <div class="deck-progress"><div></div></div>
-        ${teacher ? `<div class="deck-notes"><div class="notes-head"><span>🗒 교사용 노트</span><span class="spacer"></span><span class="notes-next"></span></div><div class="notes-body"></div></div>` : ''}
+        ${teacher ? `<div class="deck-notes${notesFolded() ? ' folded' : ''}"><div class="notes-head" data-act="notes-fold" title="교사용 노트 접기/펼치기"><span>🗒 교사용 노트</span><span class="spacer"></span><span class="notes-next"></span><button class="notes-fold" data-act="notes-fold">${notesFolded() ? '▴ 펼치기' : '▾ 접기'}</button></div><div class="notes-body"></div></div>` : ''}
         <div class="deck-overview hidden"></div>
       </div>`;
       this.el = this.root.querySelector('.deck');
@@ -354,6 +356,18 @@
       });
     }
 
+    /** 교사용 노트 접기/펼치기 (브라우저에 기억) */
+    toggleNotes() {
+      const folded = !notesFolded();
+      try { localStorage.setItem('ocv:notesFolded', folded ? '1' : '0'); } catch (_) {}
+      const box = this.el.querySelector('.deck-notes');
+      if (box) {
+        box.classList.toggle('folded', folded);
+        box.querySelector('.notes-fold').textContent = folded ? '▴ 펼치기' : '▾ 접기';
+      }
+      setTimeout(() => this.fit(), 30);
+    }
+
     onClick(e) {
       const t = e.target.closest('[data-act]');
       if (!t) return;
@@ -366,6 +380,7 @@
       else if (act === 'overview') this.toggleOverview();
       else if (act === 'goto') { this.toggleOverview(false); this.go(Number(t.dataset.i)); }
       else if (act === 'timer') this.toggleTimer();
+      else if (act === 'notes-fold') this.toggleNotes();
       else if (act === 'timer-reset') { this.timer.acc = 0; this.timer.start = this.timer.start ? performance.now() : null; this.drawTimer(); }
       else if (act === 'presenter') window.open('presenter.html', 'ocv-presenter', 'width=900,height=640');
       else if (act === 'load-example' || act === 'run-example') {

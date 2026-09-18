@@ -441,6 +441,11 @@ body.role-teacher .teacher-only { display: block; }
 .notes-body { flex: 1; overflow: auto; padding: 0 16px 10px; font-size: 14.5px; line-height: 1.65; color: var(--text); }
 .notes-body p { margin: 4px 0; }
 .notes-body .muted { color: var(--muted); font-size: 13px; }
+.notes-head { cursor: pointer; user-select: none; }
+.notes-fold { border: 1px solid var(--border); background: var(--surface); color: var(--muted); border-radius: 6px; padding: 1px 8px; font-size: 12px; cursor: pointer; }
+.notes-fold:hover { color: var(--text); border-color: var(--proj); }
+.deck-notes.folded, body.presenting.show-notes .deck-notes.folded { height: auto; }
+.deck-notes.folded .notes-body { display: none; }
 .deck-overview { position: absolute; inset: 44px 10px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.25); overflow: auto; z-index: 5; padding: 12px 16px; }
 .ov-head { font-weight: 800; margin-bottom: 8px; }
 .deck-overview ol { margin: 0; padding-left: 26px; columns: 2 300px; column-gap: 24px; }
