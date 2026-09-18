@@ -409,7 +409,8 @@
     log(`동영상을 불러오지 못했습니다: ${el.fileVideo.dataset.name} (브라우저가 지원하는 mp4/webm 형식인지 확인하세요)`, 'err');
   });
 
-  el.source.addEventListener('change', async () => {
+  el.source.addEventListener('change', async (e) => {
+    if (e.isTrusted) autoVideo = null;  // 사용자가 직접 입력 소스를 고름
     updatePreview();
     if (isCamera() && !stream) await startCamera();
     if (live.on) restartLive();
@@ -521,11 +522,16 @@
   });
 
   /* Python 의 cv.VideoCapture('파일') 에서 호출: 동영상을 입력 소스로 연다 */
+  // 코드(cv.VideoCapture('동영상'))가 입력 소스를 동영상으로 바꾼 경우, 원래 소스를 기억했다가
+  // 동영상을 쓰지 않는 코드를 실행하면 되돌린다 (사용자가 직접 고른 동영상은 유지)
+  let autoVideo = null;  // { from: 원래 소스 값, to: 코드가 연 동영상 소스 값 }
   function openVideo(name) {
     const v = findVideo(name);
     if (!v) return 'missing';
     if (currentVideo() !== v) {
+      if (!autoVideo) autoVideo = { from: el.source.value, to: null };
       el.source.value = VIDEO + v.name;
+      autoVideo.to = el.source.value;
       updatePreview();
     }
     return videoReady() && el.fileVideo.dataset.name === v.name ? 'ready' : 'loading';
@@ -699,6 +705,15 @@
     setStatus('busy', '실행 중…');
     await new Promise((r) => setTimeout(r, 20)); // 화면 갱신 기회
     code = String(code ?? '');
+    // 이전 코드가 자동으로 연 동영상이 남아 있고, 이번 코드는 동영상을 쓰지 않으면 원래 입력 소스로 되돌림
+    if (autoVideo && !/VideoCapture\(\s*['"]/.test(code)) {
+      const back = autoVideo;
+      autoVideo = null;
+      if (el.source.value === back.to && Array.from(el.source.options).some((o) => o.value === back.from)) {
+        el.source.value = back.from;
+        updatePreview();
+      }
+    }
     try { await prepareMedia(code); } catch (e) { console.warn('prepareMedia', e); }
 
     if (currentNs) { try { currentNs.destroy(); } catch (_) {} }
